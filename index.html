@@ -1295,6 +1295,7 @@ async function openTplOv(tplId){
           <div style="font-size:10px;color:var(--text2)">${t.days_offset===0?'Día 0':t.days_offset>0?`+${t.days_offset}d`:`${t.days_offset}d`} · ${t.review_mode==='required'?'Rev.oblig':t.review_mode==='optional'?'Rev.opc':'Sin rev.'}</div>
         </div>
         <button onclick="openTOVEdit(${i},'${tplId}')" style="background:var(--warn-bg);border:1px solid var(--warn-b);border-radius:6px;color:var(--warn);cursor:pointer;font-size:11px;font-weight:600;padding:5px 10px;flex-shrink:0;font-family:inherit;white-space:nowrap">✏️ Editar</button>
+        <button onclick="deleteTOVTask(${i},'${tplId}')" style="background:var(--danger-bg);border:1px solid var(--danger-b);border-radius:6px;color:var(--danger);cursor:pointer;font-size:14px;padding:5px 9px;flex-shrink:0;font-family:inherit">×</button>
       </div>`).join('')}
     </div>`:`<div style="color:var(--text3);font-size:12px">Sin tareas</div>`}
   `;
@@ -1332,6 +1333,17 @@ function cancelTOVEdit(){
   tovEditIdx=null;
   const form=document.getElementById('tpl-ov-edit-form');
   if(form)form.style.display='none';
+}
+
+async function deleteTOVTask(idx,tplId){
+  if(!confirm('¿Eliminar esta tarea de la plantilla?'))return;
+  const{data:tpl}=await db.from('templates').select('tasks_template').eq('id',tplId).single();
+  const tasks=[...(tpl?.tasks_template||[])];
+  tasks.splice(idx,1);
+  const{error}=await db.from('templates').update({tasks_template:tasks}).eq('id',tplId);
+  if(error){toast('Error: '+error.message);return;}
+  toast('Tarea eliminada');
+  openTplOv(tplId);
 }
 
 async function saveTOVEdit(tplId){
