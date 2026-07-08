@@ -1,0 +1,1854 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23111'/%3E%3Ctext x='50' y='72' font-family='system-ui,sans-serif' font-size='62' font-weight='700' fill='white' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manager — Artist App</title>
+  <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#fff;--bg2:#f5f5f5;--bg3:#ebebeb;--text:#111;--text2:#666;--text3:#aaa;--border:#e5e5e5;--border2:#ccc;--accent:#16a34a;--accent-bg:#f0fdf4;--accent-b:#bbf7d0;--warn:#d97706;--warn-bg:#fffbeb;--warn-b:#fde68a;--danger:#dc2626;--danger-bg:#fef2f2;--danger-b:#fecaca;--info:#2563eb;--info-bg:#eff6ff;--info-b:#bfdbfe;--purple:#7c3aed;--purple-bg:#f5f3ff;--purple-b:#ddd6fe;--r:8px;--rl:12px}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg2);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+    .hidden{display:none!important}
+    input,textarea,select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);font-family:inherit;font-size:13px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none}
+    input:focus,textarea:focus,select:focus{border-color:var(--border2)}
+    textarea{resize:none;min-height:60px;line-height:1.5}
+    input::placeholder,textarea::placeholder{color:var(--text3)}
+    select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23999' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:20px;padding-right:34px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;border-radius:var(--r);font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .1s;white-space:nowrap}
+    .btn:active{transform:scale(.97);opacity:.85}
+    .btn-primary{background:var(--text);color:var(--bg)}
+    .btn-ghost{background:var(--bg2);color:var(--text);border:1px solid var(--border2)}
+    .btn-success{background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-b)}
+    .btn-danger{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-b)}
+    .btn-warn{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-b)}
+    .btn-info{background:var(--info-bg);color:var(--info);border:1px solid var(--info-b)}
+    .btn-sm{padding:5px 10px;font-size:12px}
+    .btn-full{width:100%}
+    /* LAYOUT */
+    .shell{display:flex;flex-direction:column;min-height:100vh}
+    .topbar{background:var(--bg);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:20}
+    .topbar-logo{font-size:16px;font-weight:700}
+    .tab-bar{display:flex;gap:2px;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;overflow-x:auto;scrollbar-width:none}
+    .tab-bar::-webkit-scrollbar{display:none}
+    .tab{padding:12px 16px;font-size:13px;font-weight:600;color:var(--text2);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-family:inherit;transition:color .15s}
+    .tab.active{color:var(--text);border-bottom-color:var(--text)}
+    .content{flex:1;padding:24px;max-width:1200px;margin:0 auto;width:100%}
+    /* CARDS */
+    .card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:12px}
+    .card-title{font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+    /* GRID */
+    .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    @media(max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr)}.grid-3{grid-template-columns:repeat(2,1fr)}.grid-2{grid-template-columns:1fr}}
+    @media(max-width:600px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}}
+    /* STAT PILLS */
+    .stat{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:16px;text-align:center}
+    .stat-val{font-size:28px;font-weight:700;margin-bottom:3px}
+    .stat-lbl{font-size:12px;color:var(--text2)}
+    /* BADGES */
+    .badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;white-space:nowrap}
+    .b-todo{background:var(--bg3);color:var(--text2)}
+    .b-warn{background:var(--warn-bg);color:var(--warn)}
+    .b-ok{background:var(--accent-bg);color:var(--accent)}
+    .b-info{background:var(--info-bg);color:var(--info)}
+    .b-danger{background:var(--danger-bg);color:var(--danger)}
+    .b-done{background:var(--bg3);color:var(--text3)}
+    .b-purple{background:var(--purple-bg);color:var(--purple)}
+    /* TASK ROW */
+    .task-row{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s}
+    .task-row:last-child{border-bottom:none}
+    .task-row:hover{background:var(--bg2);margin:0 -16px;padding:12px 16px;border-radius:var(--r)}
+    .task-row-icon{width:32px;height:32px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+    .task-row-name{font-size:13px;font-weight:600;margin-bottom:2px}
+    .task-row-meta{font-size:11px;color:var(--text2)}
+    .task-row-note{font-size:12px;color:var(--text2);margin-top:5px;background:var(--bg2);padding:6px 9px;border-radius:6px;border-left:2px solid var(--border2);line-height:1.4}
+    /* ARTIST CARD */
+    .artist-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:12px}
+    .artist-card-header{padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
+    .artist-av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+    .artist-card-body{padding:12px 16px}
+    .pbar{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin:8px 0 4px}
+    .pfill{height:100%;border-radius:3px;background:var(--accent)}
+    /* CALENDAR */
+    .cal-grid{display:grid;grid-template-columns:80px repeat(7,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+    .cal-header{background:var(--bg);padding:8px 6px;font-size:11px;font-weight:700;color:var(--text2);text-align:center}
+    .cal-header.today{background:var(--text);color:var(--bg)}
+    .cal-artist-label{background:var(--bg);padding:8px 10px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px}
+    .cal-cell{background:var(--bg);padding:4px;min-height:48px;vertical-align:top}
+    .cal-cell.today-col{background:#fafafa}
+    .cal-event{font-size:10px;font-weight:500;padding:2px 5px;border-radius:4px;margin-bottom:2px;line-height:1.3;cursor:pointer;transition:opacity .12s}
+    .cal-event:hover{opacity:.8}
+    /* UPCOMING LIST */
+    .upcoming-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+    .upcoming-row:last-child{border-bottom:none}
+    .upcoming-date{width:52px;flex-shrink:0;text-align:center}
+    .upcoming-date-day{font-size:18px;font-weight:700;line-height:1}
+    .upcoming-date-month{font-size:10px;color:var(--text2);text-transform:uppercase}
+    /* SHEET */
+    .sov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:none;align-items:flex-end;justify-content:center}
+    .sov.open{display:flex}
+    .sh{background:var(--bg);border-radius:16px 16px 0 0;padding:0 20px 40px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto}
+    .sh-hnd{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 18px}
+    .sh-ttl{font-size:17px;font-weight:700;margin-bottom:16px}
+    .fg{margin-bottom:13px}
+    .fl{font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+    .btn-row{display:flex;gap:8px;margin-top:16px}
+    /* REV MODE */
+    .rr{display:flex;gap:7px}
+    .ro{flex:1;padding:8px 5px;border-radius:var(--r);border:1.5px solid var(--border);font-size:11px;font-weight:600;text-align:center;cursor:pointer;color:var(--text2);background:var(--bg);transition:all .15s;font-family:inherit}
+    .ro.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+    /* TPL TASK ROW */
+    .tr{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--bg)}
+    .tr:last-child{border-bottom:none}
+    /* TYPE PILLS */
+    .tp{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;display:inline-flex;align-items:center;text-transform:uppercase;letter-spacing:.03em}
+    .tp-launch{background:var(--accent-bg);color:var(--accent)}
+    .tp-show{background:var(--danger-bg);color:var(--danger)}
+    .tp-brand{background:var(--warn-bg);color:var(--warn)}
+    .tp-recurring{background:var(--info-bg);color:var(--info)}
+    .tp-loose{background:var(--bg3);color:var(--text2)}
+    /* CHECKBOXES */
+    .check-list{display:flex;flex-direction:column;gap:8px;max-height:200px;overflow-y:auto}
+    .check-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:border-color .15s}
+    .check-item.checked{border-color:var(--accent);background:var(--accent-bg)}
+    .check-item input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--accent)}
+    /* ARTIST COLORS */
+    .ac-0{background:#f0fdf4;color:#16a34a}
+    .ac-1{background:#eff6ff;color:#2563eb}
+    .ac-2{background:#fff7ed;color:#ea580c}
+    .ac-3{background:#fdf4ff;color:#a21caf}
+    .ac-4{background:#f0fdfa;color:#0d9488}
+    .ac-5{background:#fff1f2;color:#e11d48}
+    .ec-0{background:#bbf7d0;color:#15803d}
+    .ec-1{background:#bfdbfe;color:#1d4ed8}
+    .ec-2{background:#fed7aa;color:#c2410c}
+    .ec-3{background:#e9d5ff;color:#7e22ce}
+    .ec-4{background:#99f6e4;color:#0f766e}
+    .ec-5{background:#fecdd3;color:#be123c}
+    /* SECTION HEADER */
+    .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .sec-ttl{font-size:16px;font-weight:700}
+    /* EMPTY */
+    .empty{text-align:center;padding:32px;color:var(--text3)}
+    /* TOAST */
+    #toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:13px;font-weight:500;z-index:999;transition:opacity .3s;white-space:nowrap;pointer-events:none;opacity:0}
+    .ch-pill{padding:7px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg);font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all .15s}
+    .ch-pill.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+    .ch-pill i{font-size:13px}
+    .hoy-pill{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border2);color:var(--text2);background:var(--bg);cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s}
+    .hoy-pill.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+    /* ALERT BADGE */
+    .alert-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);display:inline-block;margin-left:4px;vertical-align:middle}
+  </style>
+</head>
+<body>
+<div class="shell" id="shell">
+
+
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" class="hidden">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="topbar-logo">Artist App — Manager</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div id="top-date" style="font-size:12px;color:var(--text2)"></div>
+        <button class="btn btn-info btn-sm" onclick="window.location.href='metrics.html?manager=1'"><i class="ti ti-chart-bar"></i> Métricas</button>
+        <button class="btn btn-ghost btn-sm" onclick="logout()"><i class="ti ti-logout"></i> Salir</button>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab active" onclick="showTab('resumen',this)">Resumen</button>
+      <button class="tab" onclick="showTab('revisar',this)">Para revisar <span id="rev-count-badge"></span></button>
+      <button class="tab" onclick="showTab('calendario',this)">Calendario</button>
+      <button class="tab" onclick="showTab('artistas',this)">Artistas</button>
+      <button class="tab" onclick="showTab('plantillas',this)">Plantillas</button>
+    </div>
+
+    <div class="content">
+
+      <!-- TAB: RESUMEN -->
+      <div id="tab-resumen" class="tab-content">
+        <!-- Stats row -->
+        <div class="grid-4" id="stats-row" style="margin-bottom:20px"></div>
+
+        <div class="grid-2">
+          <!-- Mi cola: lo urgente -->
+          <div>
+            <div class="sec-hdr"><div class="sec-ttl">🔥 Mi cola</div></div>
+            <div id="resumen-cola"></div>
+          </div>
+          <!-- Próximas tareas con filtro -->
+          <div>
+            <div class="sec-hdr">
+              <div class="sec-ttl">📅 Próximas tareas</div>
+            </div>
+            <!-- Period pills -->
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+              <button class="hoy-pill active" onclick="setHoyPeriod('hoy',this)">Hoy y mañana</button>
+              <button class="hoy-pill" onclick="setHoyPeriod('semana',this)">Esta semana</button>
+              <button class="hoy-pill" onclick="setHoyPeriod('mes',this)">Este mes</button>
+              <button class="hoy-pill" onclick="setHoyPeriod('custom',this)">Personalizado</button>
+            </div>
+            <!-- Custom dates (hidden by default) -->
+            <div id="hoy-custom-dates" style="display:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+              <input type="date" id="hoy-from" onchange="renderHoyPeriod()" style="font-size:12px;padding:6px 10px">
+              <input type="date" id="hoy-to" onchange="renderHoyPeriod()" style="font-size:12px;padding:6px 10px">
+            </div>
+            <div id="resumen-hoy"></div>
+          </div>
+        </div>
+
+        <!-- Por artista resumen -->
+        <div style="margin-top:20px">
+          <div class="sec-hdr">
+            <div class="sec-ttl">👥 Por artista</div>
+            <button class="btn btn-primary btn-sm" onclick="openNewArtist()"><i class="ti ti-plus"></i> Nuevo artista</button>
+          </div>
+          <div id="resumen-artistas"></div>
+        </div>
+      </div>
+
+      <!-- TAB: REVISAR -->
+      <div id="tab-revisar" class="tab-content hidden">
+        <div class="sec-hdr">
+          <div class="sec-ttl">Para revisar</div>
+        </div>
+        <div id="revisar-list"></div>
+      </div>
+
+      <!-- TAB: CALENDARIO -->
+      <div id="tab-calendario" class="tab-content hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div class="sec-ttl" id="cal-week-label">Esta semana</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="calPrev()"><i class="ti ti-chevron-left"></i> Anterior</button>
+            <button class="btn btn-ghost btn-sm" onclick="calToday()">Hoy</button>
+            <button class="btn btn-ghost btn-sm" onclick="calNext()">Siguiente <i class="ti ti-chevron-right"></i></button>
+          </div>
+        </div>
+        <div id="cal-grid-wrap" style="overflow-x:auto;margin-bottom:24px"></div>
+
+        <div class="sec-hdr" style="margin-top:8px">
+          <div class="sec-ttl">Todo lo que viene</div>
+        </div>
+        <div id="upcoming-all"></div>
+      </div>
+
+      <!-- TAB: ARTISTAS -->
+      <div id="tab-artistas" class="tab-content hidden">
+        <div class="sec-hdr">
+          <div class="sec-ttl">Artistas</div>
+          <button class="btn btn-primary btn-sm" onclick="openNewArtist()"><i class="ti ti-plus"></i> Nuevo artista</button>
+        </div>
+        <div id="artistas-list"></div>
+      </div>
+
+      <!-- TAB: PLANTILLAS -->
+      <div id="tab-plantillas" class="tab-content hidden">
+        <div class="sec-hdr">
+          <div class="sec-ttl">Plantillas</div>
+          <button class="btn btn-primary btn-sm" onclick="openNewTemplate()"><i class="ti ti-plus"></i> Nueva plantilla</button>
+        </div>
+        <div id="plantillas-list"></div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /dashboard -->
+
+  <!-- ===== SHEETS ===== -->
+
+  <!-- TASK DETAIL -->
+  <div class="sov" id="sh-task-detail">
+    <div class="sh" style="max-height:95vh">
+      <div class="sh-hnd"></div>
+      <div id="sh-task-detail-content"></div>
+    </div>
+  </div>
+
+  <!-- NEW TASK -->
+  <div class="sov" id="sh-new-task">
+    <div class="sh">
+      <div class="sh-hnd"></div>
+      <div class="sh-ttl" id="sh-nt-title">Nueva tarea</div>
+      <div class="fg"><label class="fl">Para artista</label><select id="nt-artist-sel"><option value="">Selecciona artista...</option></select></div>
+      <div class="fg"><label class="fl">Proyecto</label><select id="nt-proj-sel"><option value="">Selecciona proyecto...</option></select></div>
+      <div class="fg"><label class="fl">¿Qué hay que hacer?</label><input type="text" id="nt-name" placeholder="Ej: Video lanzamiento" autocomplete="off"></div>
+      <div class="fg"><label class="fl">Canal(es)</label>
+        <div style="display:flex;flex-wrap:wrap;gap:7px" id="mgr-ch-pills">
+          <button type="button" class="ch-pill" data-ch="" onclick="mgrToggleCh(this)">Sin canal</button>
+          <button type="button" class="ch-pill" data-ch="youtube" onclick="mgrToggleCh(this)"><i class="ti ti-brand-youtube"></i> YouTube</button>
+          <button type="button" class="ch-pill" data-ch="tiktok" onclick="mgrToggleCh(this)"><i class="ti ti-brand-tiktok"></i> TikTok</button>
+          <button type="button" class="ch-pill" data-ch="instagram" onclick="mgrToggleCh(this)"><i class="ti ti-brand-instagram"></i> Instagram</button>
+          <button type="button" class="ch-pill" data-ch="spotify" onclick="mgrToggleCh(this)"><i class="ti ti-brand-spotify"></i> Spotify</button>
+          <button type="button" class="ch-pill" data-ch="discord" onclick="mgrToggleCh(this)"><i class="ti ti-brand-discord"></i> Discord</button>
+          <button type="button" class="ch-pill" data-ch="email" onclick="mgrToggleCh(this)"><i class="ti ti-mail"></i> Email</button>
+          <button type="button" class="ch-pill" data-ch="blog" onclick="mgrToggleCh(this)"><i class="ti ti-pencil"></i> Blog</button>
+          <button type="button" class="ch-pill" data-ch="other" onclick="mgrToggleCh(this)"><i class="ti ti-circle"></i> Otro</button>
+        </div>
+        <div style="font-size:11px;color:var(--text2);margin-top:6px" id="mgr-ch-hint">Selecciona uno o varios — una tarea por canal</div>
+      </div>
+      <div class="fg"><label class="fl">Fecha límite</label><input type="date" id="nt-due"></div>
+      <div class="fg"><label class="fl">Asignar a</label><input type="text" id="nt-asgn" placeholder="Nombre del artista o colaborador" autocomplete="off"></div>
+      <div class="fg"><label class="fl">Revisión</label>
+        <div class="rr"><button class="ro active" id="nt-rev-none" onclick="setNTRev('none')">No</button><button class="ro" id="nt-rev-optional" onclick="setNTRev('optional')">Opcional</button><button class="ro" id="nt-rev-required" onclick="setNTRev('required')">Sí, siempre</button></div>
+      </div>
+      <div class="fg"><label class="fl">Copy / concepto</label><textarea id="nt-copy" placeholder="Qué decir, copy sugerido, idea del contenido..."></textarea></div>
+      <div class="fg"><label class="fl">Nota o referencia</label><textarea id="nt-note" placeholder="Referencias, ideas visuales, links..."></textarea></div>
+      <div class="btn-row"><button class="btn btn-primary" style="flex:1" onclick="saveNewTask()">Crear tarea</button><button class="btn btn-ghost" onclick="closeSheet('sh-new-task')">Cancelar</button></div>
+    </div>
+  </div>
+
+  <!-- REVIEW SHEET -->
+  <div class="sov" id="sh-review">
+    <div class="sh">
+      <div class="sh-hnd"></div>
+      <div class="sh-ttl" id="rev-task-name">Revisar contenido</div>
+      <div id="rev-submission" style="margin-bottom:14px"></div>
+      <div class="fg"><label class="fl">Feedback (si pides cambios)</label><textarea id="rev-fb" placeholder="Qué hay que cambiar..."></textarea></div>
+      <div class="btn-row" style="flex-wrap:wrap">
+        <button class="btn btn-success" style="flex:1" onclick="approveTask()"><i class="ti ti-check"></i> Aprobar</button>
+        <button class="btn btn-danger" style="flex:1" onclick="requestChanges()"><i class="ti ti-x"></i> Pedir cambios</button>
+        <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeSheet('sh-review')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW ARTIST -->
+  <div class="sov" id="sh-new-artist">
+    <div class="sh">
+      <div class="sh-hnd"></div>
+      <div class="sh-ttl">Nuevo artista</div>
+      <div class="fg"><label class="fl">Nombre completo</label><input type="text" id="na-name" placeholder="Ej: Natalia Rodríguez" autocomplete="off"></div>
+      <div class="fg"><label class="fl">Género / estilo</label><input type="text" id="na-genre" placeholder="Ej: Reggaetón · Pop latino" autocomplete="off"></div>
+      <div class="fg"><label class="fl">Email (opcional)</label><input type="email" id="na-email" placeholder="artista@email.com"></div>
+      <div id="na-result" style="display:none;margin-bottom:12px"></div>
+      <div class="btn-row"><button class="btn btn-primary" style="flex:1" onclick="createArtist()">Crear artista</button><button class="btn btn-ghost" onclick="closeSheet('sh-new-artist')">Cancelar</button></div>
+    </div>
+  </div>
+
+  <!-- TEMPLATE DETAIL + SHARE -->
+  <div class="sov" id="sh-tpl-detail">
+    <div class="sh">
+      <div class="sh-hnd"></div>
+      <div id="sh-tpl-detail-content"></div>
+    </div>
+  </div>
+
+  <!-- NEW/EDIT TEMPLATE -->
+  <div class="sov" id="sh-new-tpl">
+    <div class="sh">
+      <div class="sh-hnd"></div>
+      <div class="sh-ttl" id="sh-tpl-ttl">Nueva plantilla</div>
+      <div class="fg"><label class="fl">Nombre</label><input type="text" id="tpl-nm" placeholder="Ej: Nuevo lanzamiento estándar" autocomplete="off"></div>
+      <div class="fg"><label class="fl">Tipo</label><select id="tpl-tp"><option value="launch">Lanzamiento</option><option value="show">Show en vivo</option><option value="brand">Acuerdo con marca</option><option value="recurring">Recurrente</option><option value="loose">Acción suelta</option></select></div>
+      <div class="fg">
+        <label class="fl">Tareas</label>
+        <div id="tpl-task-list" style="border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;display:none"></div>
+        <div id="tt-edit-form" style="display:none;background:var(--warn-bg);border:1px solid var(--warn-b);border-radius:var(--r);padding:13px;margin-bottom:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--warn);margin-bottom:10px;text-transform:uppercase">Editando tarea</div>
+          <input type="text" id="tte-name" placeholder="Nombre" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;background:var(--bg);margin-bottom:8px;font-family:inherit">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <select id="tte-channel" style="padding:9px 11px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;background:var(--bg);font-family:inherit;-webkit-appearance:none">
+              <option value="">Sin canal</option><option value="youtube">YouTube</option><option value="tiktok">TikTok</option><option value="instagram">Instagram</option><option value="spotify">Spotify</option><option value="discord">Discord</option><option value="email">Email</option><option value="other">Otro</option>
+            </select>
+            <input type="number" id="tte-offset" placeholder="Días (−7, 0, +3...)" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;background:var(--bg);font-family:inherit">
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            <button id="tter-none" onclick="setTTErev('none')" style="flex:1;padding:7px 4px;border-radius:6px;border:1px solid var(--border);font-size:11px;font-weight:600;background:var(--text);color:var(--bg);cursor:pointer;font-family:inherit">Sin rev.</button>
+            <button id="tter-optional" onclick="setTTErev('optional')" style="flex:1;padding:7px 4px;border-radius:6px;border:1px solid var(--border);font-size:11px;font-weight:600;background:var(--bg);color:var(--text2);cursor:pointer;font-family:inherit">Opcional</button>
+            <button id="tter-required" onclick="setTTErev('required')" style="flex:1;padding:7px 4px;border-radius:6px;border:1px solid var(--border);font-size:11px;font-weight:600;background:var(--bg);color:var(--text2);cursor:pointer;font-family:inherit">Obligatoria</button>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button onclick="saveEditTT()" style="flex:1;padding:9px;background:var(--text);color:var(--bg);border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Guardar</button>
+            <button onclick="cancelEditTT()" style="padding:9px 14px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);font-size:13px;cursor:pointer;font-family:inherit">Cancelar</button>
+          </div>
+        </div>
+        <div style="background:var(--bg2);border-radius:var(--r);padding:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:9px;text-transform:uppercase">+ Agregar tarea</div>
+          <div class="fg" style="margin-bottom:8px"><input type="text" id="tt-nm" placeholder="Nombre de la tarea" style="background:var(--bg)" autocomplete="off"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <select id="tt-ch" style="background:var(--bg)"><option value="">Sin canal</option><option value="youtube">YouTube</option><option value="tiktok">TikTok</option><option value="instagram">Instagram</option><option value="spotify">Spotify</option><option value="discord">Discord</option><option value="email">Email</option><option value="other">Otro</option></select>
+            <input type="number" id="tt-days" placeholder="Días (−7, 0, +3...)" style="background:var(--bg)">
+          </div>
+          <div class="rr" style="margin-bottom:8px">
+            <button class="ro active" id="tt-rev-none" onclick="setTTRev('none')" style="font-size:10px">Sin rev.</button>
+            <button class="ro" id="tt-rev-optional" onclick="setTTRev('optional')" style="font-size:10px">Opcional</button>
+            <button class="ro" id="tt-rev-required" onclick="setTTRev('required')" style="font-size:10px">Obligatoria</button>
+          </div>
+          <button class="btn btn-ghost btn-full btn-sm" onclick="addTT()"><i class="ti ti-plus"></i> Agregar</button>
+        </div>
+      </div>
+      <div class="btn-row"><button class="btn btn-primary" style="flex:1" id="sh-tpl-btn" onclick="saveTpl()">Guardar plantilla</button><button class="btn btn-ghost" onclick="closeSheet('sh-new-tpl')">Cancelar</button></div>
+    </div>
+  </div>
+
+  <!-- SHARE TEMPLATE -->
+  <div class="sov" id="sh-share-tpl">
+    <div class="sh">
+      <div class="sh-hnd"></div>
+      <div class="sh-ttl" id="sh-share-tpl-name">Compartir plantilla</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Selecciona con quién quieres compartir esta plantilla. Cada artista recibirá su propia copia editable.</div>
+      <div class="fg">
+        <label class="fl">Compartir con</label>
+        <div style="margin-bottom:8px;display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="selectAllArtists()">Todos</button>
+          <button class="btn btn-ghost btn-sm" onclick="selectNoArtists()">Ninguno</button>
+        </div>
+        <div id="share-artist-list" class="check-list"></div>
+      </div>
+      <div class="btn-row"><button class="btn btn-primary" style="flex:1" onclick="saveShareTpl()"><i class="ti ti-share"></i> Guardar</button><button class="btn btn-ghost" onclick="closeSheet('sh-share-tpl')">Cancelar</button></div>
+    </div>
+  </div>
+
+  <!-- EDIT TASK (MANAGER) -->
+  <div class="sov" id="sh-mgr-edit-task">
+    <div class="sh">
+      <div class="sh-hnd"></div>
+      <div class="sh-ttl">Editar tarea</div>
+      <div class="fg"><label class="fl">¿Qué hay que hacer?</label><input type="text" id="met-name" placeholder="Nombre de la tarea" autocomplete="off"></div>
+      <div class="fg"><label class="fl">Canal(es)</label>
+        <div style="display:flex;flex-wrap:wrap;gap:7px" id="met-ch-pills">
+          <button type="button" class="ch-pill" data-ch="" onclick="metToggleCh(this)">Sin canal</button>
+          <button type="button" class="ch-pill" data-ch="youtube" onclick="metToggleCh(this)"><i class="ti ti-brand-youtube"></i> YouTube</button>
+          <button type="button" class="ch-pill" data-ch="tiktok" onclick="metToggleCh(this)"><i class="ti ti-brand-tiktok"></i> TikTok</button>
+          <button type="button" class="ch-pill" data-ch="instagram" onclick="metToggleCh(this)"><i class="ti ti-brand-instagram"></i> Instagram</button>
+          <button type="button" class="ch-pill" data-ch="spotify" onclick="metToggleCh(this)"><i class="ti ti-brand-spotify"></i> Spotify</button>
+          <button type="button" class="ch-pill" data-ch="discord" onclick="metToggleCh(this)"><i class="ti ti-brand-discord"></i> Discord</button>
+          <button type="button" class="ch-pill" data-ch="email" onclick="metToggleCh(this)"><i class="ti ti-mail"></i> Email</button>
+          <button type="button" class="ch-pill" data-ch="blog" onclick="metToggleCh(this)"><i class="ti ti-pencil"></i> Blog</button>
+          <button type="button" class="ch-pill" data-ch="other" onclick="metToggleCh(this)"><i class="ti ti-circle"></i> Otro</button>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Fecha límite</label><input type="date" id="met-due"></div>
+      <div class="fg"><label class="fl">Asignar a</label><input type="text" id="met-asgn" placeholder="Nombre" autocomplete="off"></div>
+      <div class="fg"><label class="fl">Revisión</label>
+        <div class="rr">
+          <button class="ro active" id="met-rev-none" onclick="setMetRev('none')">No</button>
+          <button class="ro" id="met-rev-optional" onclick="setMetRev('optional')">Opcional</button>
+          <button class="ro" id="met-rev-required" onclick="setMetRev('required')">Sí, siempre</button>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Copy / concepto</label><textarea id="met-copy" placeholder="Qué decir, copy sugerido..."></textarea></div>
+      <div class="fg"><label class="fl">Nota o referencia</label><textarea id="met-note" placeholder="Referencias, ideas visuales..."></textarea></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" style="flex:1" onclick="saveMgrEditTask()">Guardar cambios</button>
+        <button class="btn btn-ghost" onclick="closeSheet('sh-mgr-edit-task')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MGR NEW SUBTASK -->
+  <div class="sov" id="sh-mgr-new-subtask"><div class="sh">
+    <div class="sh-hnd"></div>
+    <div class="sh-ttl">Nueva subtarea</div>
+    <div style="background:var(--bg2);border-radius:var(--r);padding:8px 12px;margin-bottom:14px;font-size:12px;color:var(--text2)">
+      <span style="font-weight:600;color:var(--text)">↳ </span><span id="mgr-st-parent-lbl"></span>
+    </div>
+    <div class="fg"><label class="fl">¿Qué hay que hacer?</label><input type="text" id="mgr-st-name" placeholder="Ej: Editar el video" autocomplete="off"></div>
+    <div class="fg"><label class="fl">Fecha</label><input type="date" id="mgr-st-due"></div>
+    <div class="fg"><label class="fl">Plataformas</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px" id="mgr-st-pills">
+        <button type="button" class="ch-pill" data-ch="" onclick="mgrStToggleCh(this)">Sin canal</button>
+        <button type="button" class="ch-pill" data-ch="youtube" onclick="mgrStToggleCh(this)"><i class="ti ti-brand-youtube"></i> YouTube</button>
+        <button type="button" class="ch-pill" data-ch="tiktok" onclick="mgrStToggleCh(this)"><i class="ti ti-brand-tiktok"></i> TikTok</button>
+        <button type="button" class="ch-pill" data-ch="instagram" onclick="mgrStToggleCh(this)"><i class="ti ti-brand-instagram"></i> Instagram</button>
+        <button type="button" class="ch-pill" data-ch="spotify" onclick="mgrStToggleCh(this)"><i class="ti ti-brand-spotify"></i> Spotify</button>
+        <button type="button" class="ch-pill" data-ch="discord" onclick="mgrStToggleCh(this)"><i class="ti ti-brand-discord"></i> Discord</button>
+        <button type="button" class="ch-pill" data-ch="email" onclick="mgrStToggleCh(this)"><i class="ti ti-mail"></i> Email</button>
+        <button type="button" class="ch-pill" data-ch="other" onclick="mgrStToggleCh(this)"><i class="ti ti-circle"></i> Otro</button>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-top:5px">Heredadas de la tarea principal — puedes cambiarlas</div>
+    </div>
+    <div class="fg"><label class="fl">Revisión</label>
+      <div class="rr">
+        <button class="ro active" id="mgr-st-rev-none" onclick="setMgrSTRev('none')">No</button>
+        <button class="ro" id="mgr-st-rev-optional" onclick="setMgrSTRev('optional')">Opcional</button>
+        <button class="ro" id="mgr-st-rev-required" onclick="setMgrSTRev('required')">Sí</button>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Copy / concepto</label><textarea id="mgr-st-copy" placeholder="Qué decir, copy sugerido, idea..."></textarea></div>
+    <div class="fg"><label class="fl">Nota o referencia</label><textarea id="mgr-st-note" placeholder="Instrucciones, referencia..."></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" style="flex:1" onclick="saveMgrSubtask()">Crear subtarea</button>
+      <button class="btn btn-ghost" onclick="closeSheet('sh-mgr-new-subtask')">Cancelar</button>
+    </div>
+  </div></div>
+
+  <div id="toast"></div>
+</div>
+
+<script>
+const SB_URL='https://bcnmupjbrmwjxqzybkum.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjbm11cGpicm13anhxenlia3VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNzg2MjcsImV4cCI6MjA5NzY1NDYyN30.D6mJQkMjMO1b-0xxM-8U-26xQ-FGALMMccl4rJbr8V0';
+const MGR='admin123';
+const MS=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const DS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const CI={youtube:'ti-brand-youtube',tiktok:'ti-brand-tiktok',instagram:'ti-brand-instagram',spotify:'ti-brand-spotify',discord:'ti-brand-discord',email:'ti-mail',blog:'ti-pencil',other:'ti-circle'};
+const TL={launch:'Lanzamiento',show:'Show',brand:'Marca',recurring:'Recurrente',loose:'Acción suelta'};
+const TC={launch:'tp-launch',show:'tp-show',brand:'tp-brand',recurring:'tp-recurring',loose:'tp-loose'};
+const ACOLORS=['ac-0','ac-1','ac-2','ac-3','ac-4','ac-5'];
+const ECOLORS=['ec-0','ec-1','ec-2','ec-3','ec-4','ec-5'];
+
+let db=null,currentTaskId=null,calWeekOff=0;
+let tplBuf=[],ttRev='none',ntRev='none',editTplId=null;
+let allArtists=[],allProjects=[],allTasks=[],allTemplates=[];
+let shareTplId=null;
+const TODAY=new Date();
+// Get today's date in LOCAL timezone (not UTC) as YYYY-MM-DD
+function localDateStr(d){
+  const dt=d||new Date();
+  return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+}
+const TODAY_STR=localDateStr();
+
+// ===== INIT =====
+let currentManagerSlug=null; // null = super admin (sees all)
+let currentManagerName='Manager';
+let isAdmin=false;
+
+async function init(){
+  if(typeof window.supabase==='undefined'){setTimeout(init,300);return;}
+  db=window.supabase.createClient(SB_URL,SB_KEY);
+  const p=new URLSearchParams(window.location.search);
+
+  // Super admin via ?admin=1
+  if(p.get('admin')==='1'||localStorage.getItem('mgr-auth')==='1'){
+    isAdmin=true;currentManagerSlug=null;
+    document.querySelector('.topbar-logo').textContent='Artist App — Super Admin';
+    showDashboard();return;
+  }
+
+  // Manager via ?m=TOKEN
+  const token=p.get('m');
+  if(token){
+    const{data,error}=await db.from('managers').select('*').eq('token',token).single();
+    if(error||!data){window.location.href='login.html';return;}
+    currentManagerSlug=data.slug;
+    currentManagerName=data.name;
+    localStorage.setItem('aap-mgr',JSON.stringify({token,slug:data.slug,name:data.name}));
+    document.querySelector('.topbar-logo').textContent='Artist App — '+data.name;
+    showDashboard();return;
+  }
+
+  // Check localStorage for saved manager session
+  const saved=localStorage.getItem('aap-mgr');
+  if(saved){
+    try{
+      const{token:t,slug,name}=JSON.parse(saved);
+      if(t&&slug){
+        const{data}=await db.from('managers').select('*').eq('token',t).single();
+        if(data){currentManagerSlug=slug;currentManagerName=name;
+          document.querySelector('.topbar-logo').textContent='Artist App — '+name;
+          showDashboard();return;}
+      }
+    }catch(e){}
+  }
+
+  // No valid session — go to login
+  window.location.href='login.html';
+}
+
+
+
+function logout(){
+  localStorage.removeItem('mgr-auth');
+  localStorage.removeItem('aap-mgr');
+  window.location.href='login.html';
+}
+
+async function showDashboard(){
+  document.getElementById('dashboard').classList.remove('hidden');
+  const d=TODAY;
+  document.getElementById('top-date').textContent=`${DS[d.getDay()]} ${d.getDate()} ${MS[d.getMonth()]}`;
+  await loadAllData();
+  renderResumen();
+}
+
+async function loadAllData(){
+  // Filter by manager slug unless super admin
+  let artistQ=db.from('artists').select('*').order('name');
+  let tplQ=db.from('templates').select('*').order('created_at',{ascending:false});
+  if(currentManagerSlug){
+    artistQ=artistQ.eq('manager_slug',currentManagerSlug);
+    tplQ=tplQ.or('owner_slug.eq.'+currentManagerSlug+',shared.eq.true');
+  }
+  const[a,p,t,tpl]=await Promise.all([
+    artistQ,
+    db.from('projects').select('*'),
+    db.from('tasks').select('*').order('due_date',{ascending:true}),
+    tplQ,
+  ]);
+  allArtists=a.data||[];
+  // Filter projects/tasks by the artists this manager can see
+  const mgrArtistSlugs=allArtists.map(a=>a.slug);
+  allProjects=(p.data||[]).filter(p=>!currentManagerSlug||mgrArtistSlugs.includes(p.artist_id));
+  const projIds=allProjects.map(p=>p.id);
+  allTasks=(t.data||[]).filter(t=>projIds.includes(t.project_id));
+  allTemplates=tpl.data||[];
+
+  // Update review badge
+  const revCount=allTasks.filter(t=>t.status==='review').length;
+  document.getElementById('rev-count-badge').innerHTML=revCount>0?`<span style="background:var(--danger);color:white;border-radius:20px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:4px">${revCount}</span>`:'';
+}
+
+// ===== STATUS =====
+function dU(ds){const d=new Date(ds+'T00:00:00'),t=new Date(TODAY.getFullYear(),TODAY.getMonth(),TODAY.getDate());return Math.round((d-t)/86400000);}
+function gSt(t){
+  if(['published','done'].includes(t.status))return'published';
+  if(t.status==='late-pub')return'late-pub';
+  if(t.status==='review')return'review';
+  if(t.status==='approved')return'approved';
+  if(dU(t.due_date)<0)return'late';
+  return'todo';
+}
+function sBadge(s){
+  return{
+    todo:'<span class="badge b-todo">Pendiente</span>',
+    review:'<span class="badge b-info"><i class="ti ti-eye"></i> En revisión</span>',
+    approved:'<span class="badge b-ok"><i class="ti ti-check"></i> Aprobado</span>',
+    published:'<span class="badge b-done">Publicado</span>',
+    late:'<span class="badge b-danger"><i class="ti ti-alert-triangle"></i> Vencida</span>',
+    'late-pub':'<span class="badge b-warn"><i class="ti ti-clock"></i> Tarde</span>',
+  }[s]||'';
+}
+function fmt(ds){const d=new Date(ds+'T00:00:00');return`${d.getDate()} ${MS[d.getMonth()]}`;}
+function addD(d,n){const r=new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);return r;}
+function n2s(n){return n.toLowerCase().trim().replace(/\s+/g,'-').normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function s2n(slug){if(!slug)return'';const a=allArtists.find(a=>a.slug===slug);if(a)return a.name;return slug.split('-').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');}
+function artistColor(slug){const i=allArtists.findIndex(a=>a.slug===slug);return ACOLORS[i%ACOLORS.length]||'ac-0';}
+function eventColor(slug){const i=allArtists.findIndex(a=>a.slug===slug);return ECOLORS[i%ECOLORS.length]||'ec-0';}
+
+function projName(projId){const p=allProjects.find(p=>p.id===projId);return p?.name||'';}
+
+// ===== TABS =====
+function showTab(id,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.add('hidden'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.remove('hidden');
+  if(btn)btn.classList.add('active');
+  if(id==='resumen')renderResumen();
+  if(id==='revisar')renderRevisar();
+  if(id==='calendario')renderCalendario();
+  if(id==='artistas')renderArtistas();
+  if(id==='plantillas')renderPlantillas();
+}
+
+// ===== RESUMEN TAB =====
+async function renderResumen(){
+  await loadAllData();
+
+  // Stats
+  const revPending=allTasks.filter(t=>t.status==='review').length;
+  const late=allTasks.filter(t=>gSt(t)==='late').length;
+  const todayTasks=allTasks.filter(t=>t.due_date===TODAY_STR&&!['published','late-pub'].includes(t.status));
+  const totalActive=allTasks.filter(t=>!['published','late-pub'].includes(t.status)).length;
+
+  document.getElementById('stats-row').innerHTML=`
+    <div class="stat"><div class="stat-val" style="color:var(--danger)">${revPending}</div><div class="stat-lbl">Para revisar</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--warn)">${late}</div><div class="stat-lbl">Vencidas</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--info)">${todayTasks.length}</div><div class="stat-lbl">Vencen hoy</div></div>
+    <div class="stat"><div class="stat-val">${allArtists.length}</div><div class="stat-lbl">Artistas</div></div>
+  `;
+
+  // Mi cola: review + late + approved sin publicar
+  const cola=[
+    ...allTasks.filter(t=>t.status==='review'),
+    ...allTasks.filter(t=>gSt(t)==='late'),
+    ...allTasks.filter(t=>t.status==='approved'),
+  ].slice(0,10);
+
+  const colaEl=document.getElementById('resumen-cola');
+  if(!cola.length){
+    colaEl.innerHTML=`<div class="card"><div class="empty">✅ Sin pendientes urgentes</div></div>`;
+  } else {
+    colaEl.innerHTML=`<div class="card" style="padding:0 16px">${cola.map(t=>taskRowHTML(t,true)).join('')}</div>`;
+  }
+
+  // Render hoy period (default: hoy y mañana)
+  renderHoyPeriod();
+
+  // Por artista
+  const artEl=document.getElementById('resumen-artistas');
+  artEl.innerHTML=allArtists.map(a=>{
+    const aproj=allProjects.filter(p=>p.artist_id===a.slug);
+    const projIds=aproj.map(p=>p.id);
+    const atasks=allTasks.filter(t=>projIds.includes(t.project_id));
+    const done=atasks.filter(t=>['published','late-pub'].includes(t.status)).length;
+    const total=atasks.length;
+    const rev=atasks.filter(t=>t.status==='review').length;
+    const late=atasks.filter(t=>gSt(t)==='late').length;
+    const thisWeekEnd=addD(TODAY,7).toISOString().slice(0,10);
+    const upcoming=atasks.filter(t=>t.due_date>=TODAY_STR&&t.due_date<=thisWeekEnd&&!['published','late-pub'].includes(t.status));
+    const ac=artistColor(a.slug);
+    return`<div class="artist-card">
+      <div class="artist-card-header">
+        <div class="artist-av ${ac}">${a.slug.slice(0,2).toUpperCase()}</div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700">${a.name}</div>
+          <div style="font-size:12px;color:var(--text2)">${a.genre||''} · ${aproj.length} proyecto${aproj.length!==1?'s':''}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${rev>0?`<span class="badge b-info">${rev} revisión${rev>1?'es':''}</span>`:''}
+          ${late>0?`<span class="badge b-danger">${late} vencida${late>1?'s':''}</span>`:''}
+          <button class="btn btn-primary btn-sm" onclick="openNewTaskForArtist('${a.slug}')"><i class="ti ti-plus"></i> Tarea</button>
+          <a href="${location.origin}${location.pathname.replace('manager_dashboard.html','')}index.html?user=${a.slug}" target="_blank" class="btn btn-ghost btn-sm"><i class="ti ti-external-link"></i></a>
+        </div>
+      </div>
+      <div class="artist-card-body">
+        <div class="pbar"><div class="pfill" style="width:${total?(done/total)*100:0}%"></div></div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px">${done}/${total} tareas completadas · ${total?Math.round((done/total)*100):0}%</div>
+        ${upcoming.length?`<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Esta semana (${upcoming.length}):</div>
+        ${upcoming.slice(0,3).map(t=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="openTaskDetail('${t.id}')">
+          <i class="ti ${CI[t.channel]||'ti-circle'}" style="font-size:14px;color:var(--text2)"></i>
+          <div style="flex:1;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
+          <span style="font-size:11px;color:var(--text2)">${fmt(t.due_date)}</span>
+          ${sBadge(gSt(t))}
+        </div>`).join('')}
+        ${upcoming.length>3?`<div style="font-size:11px;color:var(--text3);padding:5px 0">+ ${upcoming.length-3} más esta semana</div>`:''}`:'<div style="font-size:12px;color:var(--text3)">Sin tareas esta semana</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function taskRowHTML(t,showArtist=false){
+  const s=gSt(t);
+  const proj=allProjects.find(p=>p.id===t.project_id);
+  const artistSlug=proj?.artist_id||'';
+  return`<div class="task-row" onclick="openTaskDetail('${t.id}')">
+    <div class="task-row-icon"><i class="ti ${CI[t.channel]||'ti-circle'}"></i></div>
+    <div style="flex:1;min-width:0">
+      <div class="task-row-name">${t.name}</div>
+      <div class="task-row-meta">${showArtist?s2n(artistSlug)+' · ':''}${proj?.name||''} · vence ${fmt(t.due_date)}</div>
+      ${t.submitted_note?`<div class="task-row-note">"${t.submitted_note}"</div>`:''}
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">${sBadge(s)}</div>
+  </div>`;
+}
+
+// ===== HOY PERIOD FILTER =====
+let hoyPeriod='hoy';
+
+function setHoyPeriod(period,btn){
+  hoyPeriod=period;
+  document.querySelectorAll('.hoy-pill').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  const cd=document.getElementById('hoy-custom-dates');
+  if(cd)cd.style.display=period==='custom'?'grid':'none';
+  if(period!=='custom')renderHoyPeriod();
+}
+
+function renderHoyPeriod(){
+  const todayStr=TODAY_STR;
+  let fromStr=todayStr;
+  let toStr=localDateStr(addD(TODAY,1));
+
+  if(hoyPeriod==='semana'){
+    const dow=TODAY.getDay();
+    const mon=addD(TODAY,-(dow===0?6:dow-1));
+    const sun=addD(mon,6);
+    fromStr=localDateStr(mon);toStr=localDateStr(sun);
+  } else if(hoyPeriod==='mes'){
+    fromStr=TODAY.getFullYear()+'-'+String(TODAY.getMonth()+1).padStart(2,'0')+'-01';
+    const lastDay=new Date(TODAY.getFullYear(),TODAY.getMonth()+1,0).getDate();
+    toStr=TODAY.getFullYear()+'-'+String(TODAY.getMonth()+1).padStart(2,'0')+'-'+String(lastDay).padStart(2,'0');
+  } else if(hoyPeriod==='custom'){
+    fromStr=document.getElementById('hoy-from')?.value||todayStr;
+    toStr=document.getElementById('hoy-to')?.value||todayStr;
+    if(!fromStr||!toStr)return;
+  }
+
+  const tasks=allTasks.filter(t=>
+    t.due_date>=fromStr&&t.due_date<=toStr&&
+    !['published','late-pub'].includes(t.status)
+  ).sort((a,b)=>a.due_date.localeCompare(b.due_date));
+
+  const el=document.getElementById('resumen-hoy');
+  if(!tasks.length){
+    el.innerHTML=`<div class="card"><div class="empty">Sin tareas pendientes en este período</div></div>`;
+    return;
+  }
+
+  // Group by date
+  const byDate={};
+  tasks.forEach(t=>{if(!byDate[t.due_date])byDate[t.due_date]=[];byDate[t.due_date].push(t);});
+
+  el.innerHTML=`<div class="card" style="padding:0 16px">`+Object.entries(byDate).map(([date,dayTasks])=>{
+    const d=new Date(date+'T00:00:00');
+    const isToday=date===todayStr;
+    const isTom=date===localDateStr(addD(TODAY,1));
+    const label=isToday?'Hoy':isTom?'Mañana':`${DS[d.getDay()]} ${d.getDate()} ${MS[d.getMonth()]}`;
+    return`<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;color:${isToday?'var(--danger)':isTom?'var(--warn)':'var(--text2)'};text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">${label}</div>
+      ${dayTasks.map(t=>taskRowHTML(t,true)).join('')}
+    </div>`;
+  }).join('')+`</div>`;
+}
+
+// ===== REVISAR TAB =====
+async function renderRevisar(){
+  await loadAllData();
+  const rev=allTasks.filter(t=>t.status==='review');
+  const el=document.getElementById('revisar-list');
+  if(!rev.length){el.innerHTML=`<div class="card"><div class="empty">✅ Nada para revisar</div></div>`;return;}
+  el.innerHTML=`<div class="card" style="padding:0 16px">${rev.map(t=>{
+    const proj=allProjects.find(p=>p.id===t.project_id);
+    return`<div class="task-row" onclick="openReview('${t.id}')">
+      <div class="task-row-icon"><i class="ti ${CI[t.channel]||'ti-circle'}"></i></div>
+      <div style="flex:1;min-width:0">
+        <div class="task-row-name">${t.name}</div>
+        <div class="task-row-meta">${s2n(proj?.artist_id||'')} · ${proj?.name||''} · vence ${fmt(t.due_date)}</div>
+        ${t.submitted_link?`<div style="margin-top:5px"><a href="${t.submitted_link.startsWith('http')?t.submitted_link:'https://'+t.submitted_link}" target="_blank" class="btn btn-ghost btn-sm"><i class="ti ti-external-link"></i> Ver contenido</a></div>`:''}
+        ${t.submitted_note?`<div class="task-row-note">"${t.submitted_note}"</div>`:''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+        <button class="btn btn-success btn-sm" onclick="event.stopPropagation();quickApprove('${t.id}')"><i class="ti ti-check"></i> Aprobar</button>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();openReview('${t.id}')"><i class="ti ti-x"></i> Cambios</button>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+async function quickApprove(taskId){
+  const{error}=await db.from('tasks').update({status:'approved',manager_feedback:null,updated_at:new Date().toISOString()}).eq('id',taskId);
+  if(error){toast('Error: '+error.message);return;}
+  toast('✓ Aprobado');
+  await loadAllData();
+  renderRevisar();
+  if(!document.getElementById('tab-resumen').classList.contains('hidden'))renderResumen();
+}
+
+// ===== CALENDAR TAB =====
+async function renderCalendario(){
+  await loadAllData();
+  const base=addD(TODAY,calWeekOff*7);
+  const dow=base.getDay();const mon=addD(base,-(dow===0?6:dow-1));
+  const days=Array.from({length:7},(_,i)=>addD(mon,i));
+  const isNow=calWeekOff===0;
+  document.getElementById('cal-week-label').textContent=isNow?'Esta semana':calWeekOff===-1?'Semana pasada':calWeekOff===1?'Próxima semana':`${fmt(localDateStr(mon))} — ${fmt(localDateStr(addD(mon,6)))}`;
+
+  // Build calendar grid
+  let html=`<div class="cal-grid" style="min-width:600px">`;
+  // Header row
+  html+=`<div class="cal-header" style="background:var(--bg2)"></div>`;
+  days.forEach(d=>{
+    const isT=localDateStr(d)===TODAY_STR;
+    html+=`<div class="cal-header${isT?' today':''}">${DS[d.getDay()]}<br><strong>${d.getDate()}</strong></div>`;
+  });
+
+  // Artist rows
+  allArtists.forEach(a=>{
+    const projIds=allProjects.filter(p=>p.artist_id===a.slug).map(p=>p.id);
+    const ac=artistColor(a.slug);
+    const ec=eventColor(a.slug);
+    html+=`<div class="cal-artist-label"><div class="artist-av ${ac}" style="width:24px;height:24px;font-size:10px">${a.slug.slice(0,2).toUpperCase()}</div>${a.name}</div>`;
+    days.forEach(d=>{
+      const ds=d.toISOString().slice(0,10);
+      const isT=localDateStr(d)===TODAY_STR;
+      const dayTasks=allTasks.filter(t=>t.due_date===ds&&projIds.includes(t.project_id));
+      html+=`<div class="cal-cell${isT?' today-col':''}">`;
+      dayTasks.forEach(t=>{
+        const s=gSt(t);
+        const borderCol=s==='late'?'#dc2626':s==='published'||s==='late-pub'?'#16a34a':s==='review'?'#2563eb':'#d97706';
+        html+=`<div class="cal-event ${ec}" style="border-left:2px solid ${borderCol}" onclick="openTaskDetail('${t.id}')" title="${t.name}">${t.name.length>18?t.name.slice(0,16)+'…':t.name}</div>`;
+      });
+      html+=`</div>`;
+    });
+  });
+
+  if(!allArtists.length){
+    html+=`<div style="grid-column:span 8;padding:32px;text-align:center;color:var(--text3)">Sin artistas</div>`;
+  }
+  html+=`</div>`;
+  document.getElementById('cal-grid-wrap').innerHTML=html;
+
+  // Upcoming all — everything from today onwards
+  const todayStr=TODAY_STR;
+  const upcoming=allTasks.filter(t=>t.due_date>=todayStr&&!['published','late-pub'].includes(t.status))
+    .sort((a,b)=>a.due_date.localeCompare(b.due_date));
+
+  const upEl=document.getElementById('upcoming-all');
+  if(!upcoming.length){upEl.innerHTML=`<div class="card"><div class="empty">Sin tareas próximas</div></div>`;return;}
+
+  // Group by date
+  const byDate={};
+  upcoming.forEach(t=>{if(!byDate[t.due_date])byDate[t.due_date]=[];byDate[t.due_date].push(t);});
+  upEl.innerHTML=`<div class="card" style="padding:0 16px">`+Object.entries(byDate).map(([date,tasks])=>{
+    const d=new Date(date+'T00:00:00');
+    const isToday=date===todayStr;
+    const isTom=date===localDateStr(addD(TODAY,1));
+    const label=isToday?'Hoy':isTom?'Mañana':`${DS[d.getDay()]} ${d.getDate()} ${MS[d.getMonth()]}`;
+    return`<div class="upcoming-row" style="align-items:flex-start">
+      <div class="upcoming-date">
+        <div class="upcoming-date-day" style="color:${isToday?'var(--danger)':'var(--text)'}">${d.getDate()}</div>
+        <div class="upcoming-date-month">${MS[d.getMonth()]}</div>
+        ${isToday?`<div style="font-size:9px;color:var(--danger);font-weight:700">HOY</div>`:''}
+      </div>
+      <div style="flex:1">${tasks.map(t=>{
+        const proj=allProjects.find(p=>p.id===t.project_id);
+        const ac=artistColor(proj?.artist_id||'');
+        return`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer" onclick="openTaskDetail('${t.id}')">
+          <div class="artist-av ${ac}" style="width:20px;height:20px;font-size:8px;flex-shrink:0">${(proj?.artist_id||'').slice(0,2).toUpperCase()}</div>
+          <i class="ti ${CI[t.channel]||'ti-circle'}" style="font-size:13px;color:var(--text2)"></i>
+          <span style="font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</span>
+          <span style="font-size:11px;color:var(--text2)">${s2n(proj?.artist_id||'')}</span>
+          ${sBadge(gSt(t))}
+        </div>`;
+      }).join('')}</div>
+    </div>`;
+  }).join('')+`</div>`;
+}
+
+function calPrev(){calWeekOff--;renderCalendario();}
+function calNext(){calWeekOff++;renderCalendario();}
+function calToday(){calWeekOff=0;renderCalendario();}
+
+// ===== ARTISTAS TAB =====
+async function renderArtistas(){
+  await loadAllData();
+  const el=document.getElementById('artistas-list');
+  if(!allArtists.length){el.innerHTML=`<div class="card"><div class="empty">Sin artistas. Crea el primero.</div></div>`;return;}
+  el.innerHTML=allArtists.map(a=>{
+    const projIds=allProjects.filter(p=>p.artist_id===a.slug).map(p=>p.id);
+    const atasks=allTasks.filter(t=>projIds.includes(t.project_id));
+    const done=atasks.filter(t=>['published','late-pub'].includes(t.status)).length;
+    const rev=atasks.filter(t=>t.status==='review').length;
+    const late=atasks.filter(t=>gSt(t)==='late').length;
+    const ac=artistColor(a.slug);
+    const link=`${location.origin}${location.pathname.replace('manager_dashboard.html','')}index.html?user=${a.slug}`;
+    return`<div class="artist-card">
+      <div class="artist-card-header">
+        <div class="artist-av ${ac}">${a.slug.slice(0,2).toUpperCase()}</div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700">${a.name}</div>
+          <div style="font-size:12px;color:var(--text2)">${a.genre||''}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          ${rev>0?`<span class="badge b-info">${rev} revisión${rev>1?'es':''}</span>`:''}
+          ${late>0?`<span class="badge b-danger">${late} vencida${late>1?'s':''}</span>`:''}
+        </div>
+      </div>
+      <div class="artist-card-body">
+        <div class="pbar"><div class="pfill" style="width:${atasks.length?(done/atasks.length)*100:0}%"></div></div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:12px">${done}/${atasks.length} tareas completadas</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="openNewTaskForArtist('${a.slug}')"><i class="ti ti-plus"></i> Nueva tarea</button>
+          <a href="${link}" target="_blank" class="btn btn-ghost btn-sm"><i class="ti ti-external-link"></i> Ver como artista</a>
+          <button class="btn btn-ghost btn-sm" onclick="copyLink('${link}')"><i class="ti ti-copy"></i> Copiar link</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteArtist('${a.slug}','${a.name}')"><i class="ti ti-trash"></i> Eliminar</button>
+        </div>
+        ${a.email?`<div style="font-size:12px;color:var(--text2);margin-top:8px"><i class="ti ti-mail" style="font-size:12px"></i> ${a.email}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== PLANTILLAS TAB =====
+async function renderPlantillas(){
+  await loadAllData();
+  const el=document.getElementById('plantillas-list');
+  if(!allTemplates.length){el.innerHTML=`<div class="card"><div class="empty">Sin plantillas.</div></div>`;return;}
+
+  // Group by owner
+  const byOwner={};
+  allTemplates.forEach(t=>{
+    const owner=t.owner_slug||t.created_by||'sistema';
+    if(!byOwner[owner])byOwner[owner]=[];
+    byOwner[owner].push(t);
+  });
+
+  el.innerHTML=Object.entries(byOwner).map(([owner,tpls])=>{
+    const ownerName=owner==='sistema'?'Manager (globales)':owner==='manager'?'Manager':s2n(owner);
+    return`<div style="margin-bottom:20px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">${ownerName}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">
+        ${tpls.map(t=>{
+          const sharedWith=Array.isArray(t.shared_with)?t.shared_with:[];
+          const isGlobal=t.shared===true;
+          return`<div class="card" style="cursor:pointer" onclick="openTplDetail('${t.id}')">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <span class="tp ${TC[t.type]}">${TL[t.type]}</span>
+              ${isGlobal?`<span class="badge b-ok">Visible para todos</span>`:sharedWith.length>0?`<span class="badge b-info">${sharedWith.length} artista${sharedWith.length>1?'s':''}</span>`:`<span class="badge b-todo">Solo yo</span>`}
+            </div>
+            <div style="font-size:14px;font-weight:700;margin-bottom:4px">${t.name}</div>
+            <div style="font-size:12px;color:var(--text2);margin-bottom:10px">${(t.tasks_template||[]).length} tareas</div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-info btn-sm" onclick="event.stopPropagation();openShareTpl('${t.id}','${t.name}')"><i class="ti ti-share"></i> Compartir</button>
+              <button class="btn btn-warn btn-sm" onclick="event.stopPropagation();openEditTpl('${t.id}')"><i class="ti ti-edit"></i> Editar</button>
+              <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteTpl('${t.id}')"><i class="ti ti-trash"></i></button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== TASK DETAIL =====
+async function openTaskDetail(taskId){
+  currentTaskId=taskId;
+  window._mgrDetailTaskId=taskId;
+  // Always fetch fresh from DB to get latest review_history
+  const{data:task}=await db.from('tasks').select('*').eq('id',taskId).single();
+  if(!task){return;}
+  const proj=allProjects.find(p=>p.id===task.project_id);
+  const s=gSt(task);
+  const PLAT_LBL={youtube:'YouTube',tiktok:'TikTok',instagram:'Instagram',spotify:'Spotify',discord:'Discord',email:'Email',blog:'Blog',other:'Otro'};
+  const PLAT_IC={youtube:'ti-brand-youtube',tiktok:'ti-brand-tiktok',instagram:'ti-brand-instagram',spotify:'ti-brand-spotify',discord:'ti-brand-discord',email:'ti-mail',blog:'ti-pencil',other:'ti-circle'};
+
+  // Parse platforms
+  const platforms=task.platforms?(typeof task.platforms==='string'?JSON.parse(task.platforms):task.platforms):null;
+  const platformsDone=task.platforms_done?(typeof task.platforms_done==='string'?JSON.parse(task.platforms_done):task.platforms_done):[];
+
+  let html='';
+  html+='<div style="display:flex;align-items:center;gap:7px;margin-bottom:7px">';
+  if(platforms&&platforms.length>1){
+    platforms.forEach(p=>{html+='<span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;background:var(--bg2);padding:2px 8px;border-radius:20px"><i class="ti '+(PLAT_IC[p]||'ti-circle')+'"></i>'+PLAT_LBL[p]+'</span>';});
+  } else {
+    html+='<i class="ti '+(CI[task.channel]||'ti-circle')+'" style="font-size:16px;color:var(--text2)"></i>';
+    html+='<span style="font-size:11px;color:var(--text2)">'+(task.channel||'Sin canal')+'</span>';
+  }
+  html+='</div>';
+  html+='<div style="font-size:19px;font-weight:700;margin-bottom:5px">'+task.name+'</div>';
+  html+='<div style="font-size:12px;color:var(--text2);margin-bottom:12px">'+s2n(proj?.artist_id||'')+' · '+(proj?.name||'')+' · vence '+fmt(task.due_date)+'</div>';
+  html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">'+sBadge(s)+'<span style="font-size:12px;color:var(--text2)">Para: '+s2n(task.assigned_to||proj?.artist_id||'')+'</span></div>';
+
+  if(task.note)html+='<div style="background:var(--bg2);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2);margin-bottom:12px;border-left:2px solid var(--border2)">'+task.note+'</div>';
+  if(task.submitted_link){
+    html+='<div style="margin-bottom:12px"><a href="'+(task.submitted_link.startsWith('http')?task.submitted_link:'https://'+task.submitted_link)+'" target="_blank" class="btn btn-ghost btn-sm"><i class="ti ti-external-link"></i> Ver contenido entregado</a>';
+    if(task.submitted_note)html+='<div style="font-size:12px;color:var(--text2);margin-top:6px">"'+task.submitted_note+'"</div>';
+    html+='</div>';
+  }
+  // feedback shown in review_history below
+
+  // Store taskId globally so buttons can access without string interpolation
+  window._mgrDetailTaskId=taskId;
+
+  // Platform checks (multi-platform)
+  if(platforms&&platforms.length>1&&!['published','late-pub'].includes(s)){
+    const allDone=platforms.every(p=>platformsDone.includes(p));
+    html+='<div style="background:var(--bg2);border-radius:var(--rl);padding:13px 14px;margin-bottom:12px" id="mgr-plat-block">';
+    html+='<div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Plataformas</div>';
+    platforms.forEach(p=>{
+      const done=platformsDone.includes(p);
+      html+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer" data-plat="'+p+'" onclick="mgrTogglePlatform(window._mgrDetailTaskId,this.dataset.plat)">';
+      html+='<div style="width:24px;height:24px;border-radius:6px;border:2px solid '+(done?'var(--accent)':'var(--border2)')+';background:'+(done?'var(--accent)':'var(--bg)')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">';
+      if(done)html+='<i class="ti ti-check" style="color:white;font-size:13px"></i>';
+      html+='</div>';
+      html+='<i class="ti '+(PLAT_IC[p]||'ti-circle')+'" style="font-size:16px;color:var(--text2)"></i>';
+      html+='<span style="font-size:14px;font-weight:500;'+(done?'text-decoration:line-through;color:var(--text2)':'')+'">'+PLAT_LBL[p]+'</span>';
+      if(done)html+='<span class="badge b-ok" style="margin-left:auto">✓ Subido</span>';
+      html+='</div>';
+    });
+    html+='<div style="font-size:12px;color:var(--text3);text-align:center;margin-top:8px">'+platformsDone.length+'/'+platforms.length+' plataformas</div>';
+    if(allDone)html+='<button class="btn btn-success btn-full" style="margin-top:10px" onclick="mgrCompleteTask(window._mgrDetailTaskId)">✅ Marcar como publicado</button>';
+    html+='</div>';
+  }
+
+  html+='<div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">';
+  if(s==='review')html+='<button class="btn btn-info btn-full" onclick="mgrDetailReview()"><i class="ti ti-eye"></i> Revisar contenido</button>';
+  if(!platforms||platforms.length<=1){
+    if(!['published','late-pub'].includes(s)){
+      html+='<button class="btn btn-success btn-full" onclick="mgrCompleteTask(window._mgrDetailTaskId)">✅ Marcar como publicado</button>';
+    }
+  }
+  html+='<button class="btn btn-warn btn-sm" onclick="mgrDetailEdit()"><i class="ti ti-edit"></i> Editar tarea</button>';
+  html+='<button class="btn btn-danger btn-sm" onclick="deleteTask(window._mgrDetailTaskId)"><i class="ti ti-trash"></i> Eliminar tarea</button>';
+  html+='</div>';
+
+  // Subtasks
+  const{data:subtasks}=await db.from('tasks').select('*').eq('parent_task_id',taskId).order('due_date',{ascending:true});
+  const stList=subtasks||[];
+  const PLAT_IC2={youtube:'ti-brand-youtube',tiktok:'ti-brand-tiktok',instagram:'ti-brand-instagram',spotify:'ti-brand-spotify',discord:'ti-brand-discord',email:'ti-mail',blog:'ti-pencil',other:'ti-circle'};
+
+  html+='<div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px">';
+  html+='<div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em">Subtareas ('+stList.length+')</div>';
+  html+='<button class="btn btn-primary btn-sm" onclick="mgrOpenNewSubtask(window._mgrDetailTaskId)"><i class="ti ti-plus"></i> Agregar</button>';
+  html+='</div>';
+
+  if(stList.length){
+    html+='<div style="background:var(--bg2);border-radius:var(--rl);overflow:hidden;margin-bottom:14px">';
+    stList.forEach((st,i)=>{
+      const ss=gSt(st);
+      const stDone=['published','late-pub'].includes(ss);
+      const stPlats=st.platforms?(typeof st.platforms==='string'?JSON.parse(st.platforms):st.platforms):null;
+      const stDonePlats=st.platforms_done?(typeof st.platforms_done==='string'?JSON.parse(st.platforms_done):st.platforms_done):[];
+      html+='<div style="padding:10px 13px;border-bottom:'+(i===stList.length-1?'none':'1px solid var(--border)')+';cursor:pointer;background:var(--bg)" data-stid="'+st.id+'" onclick="mgrOpenSubtaskDetail(this.dataset.stid)">';
+      html+='<div style="display:flex;align-items:center;gap:8px">';
+      html+='<div style="width:18px;height:18px;border-radius:4px;border:2px solid '+(stDone?'var(--accent)':'var(--border2)')+';background:'+(stDone?'var(--accent)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">';
+      if(stDone)html+='<i class="ti ti-check" style="color:white;font-size:10px"></i>';
+      html+='</div>';
+      html+='<div style="flex:1;min-width:0">';
+      html+='<div style="font-size:13px;font-weight:500;'+(stDone?'text-decoration:line-through;color:var(--text2)':'')+'">'+st.name+'</div>';
+      html+='<div style="font-size:11px;color:var(--text2)">'+fmt(st.due_date)+'</div>';
+      html+='</div>';
+      html+='<i class="ti ti-chevron-right" style="color:var(--text3);font-size:14px"></i>';
+      html+='</div>';
+      if(stPlats&&stPlats.length>1){
+        html+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;padding-left:26px">';
+        stPlats.forEach(p=>{
+          const d=stDonePlats.includes(p);
+          html+='<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:500;background:'+(d?'var(--accent-bg)':'var(--bg3)')+';color:'+(d?'var(--accent)':'var(--text3)')+'"><i class="ti '+(PLAT_IC2[p]||'ti-circle')+'"></i>'+(d?'✓ ':'')+p+'</span>';
+        });
+        html+='</div>';
+      }
+      html+='</div>';
+    });
+    html+='</div>';
+  } else {
+    html+='<div style="background:var(--bg2);border-radius:var(--r);padding:12px;font-size:12px;color:var(--text3);text-align:center;margin-bottom:14px">Sin subtareas</div>';
+  }
+
+  // Review history
+  const reviewHist=Array.isArray(task.review_history)?task.review_history:[];
+  if(reviewHist.length){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin:14px 0 8px;text-transform:uppercase;letter-spacing:.04em">Historial de revisión</div>';
+    html+=renderReviewHistory(reviewHist);
+  }
+  html+='<div style="font-size:11px;color:var(--text3);margin-top:8px">Creada '+new Date(task.created_at).toLocaleDateString('es',{day:'numeric',month:'short',year:'numeric'})+'</div>';
+
+  document.getElementById('sh-task-detail-content').innerHTML=html;
+  openSheet('sh-task-detail');
+}
+
+// ===== REVIEW =====
+async function openReview(taskId){
+  currentTaskId=taskId;
+  window._mgrDetailTaskId=taskId;
+  const{data:task}=await db.from('tasks').select('*').eq('id',taskId).single();
+  if(!task)return;
+  document.getElementById('rev-task-name').textContent=task.name;
+  document.getElementById('rev-submission').innerHTML=task.submitted_link?`
+    <div style="background:var(--info-bg);border-radius:var(--r);padding:11px 13px;font-size:13px;color:var(--info)">
+      <div style="font-weight:600;margin-bottom:5px">Contenido entregado</div>
+      <a href="${task.submitted_link.startsWith('http')?task.submitted_link:'https://'+task.submitted_link}" target="_blank" style="color:var(--info);word-break:break-all">${task.submitted_link}</a>
+      ${task.submitted_note?`<div style="margin-top:6px;color:var(--text2)">${task.submitted_note}</div>`:''}
+    </div>`:'<div style="font-size:13px;color:var(--text2)">Sin link entregado.</div>';
+  document.getElementById('rev-fb').value='';
+  openSheet('sh-review');
+}
+
+async function approveTask(){
+  if(!currentTaskId){toast('Error: sin tarea seleccionada');return;}
+  const{data:task}=await db.from('tasks').select('review_history').eq('id',currentTaskId).single();
+  const history=Array.isArray(task?.review_history)?task.review_history:[];
+  history.push({type:'approve',text:null,author:'manager',date:new Date().toISOString()});
+  const{error}=await db.from('tasks').update({
+    status:'approved',manager_feedback:null,
+    review_history:history,updated_at:new Date().toISOString()
+  }).eq('id',currentTaskId);
+  if(error){toast('Error: '+error.message);return;}
+  closeSheet('sh-review');closeSheet('sh-task-detail');
+  toast('✓ Aprobado');await loadAllData();
+  if(!document.getElementById('tab-revisar').classList.contains('hidden'))renderRevisar();
+  if(!document.getElementById('tab-resumen').classList.contains('hidden'))renderResumen();
+}
+
+async function requestChanges(){
+  if(!currentTaskId){toast('Error: sin tarea seleccionada');return;}
+  const fb=document.getElementById('rev-fb').value.trim();
+  if(!fb){toast('Escribe el feedback antes de pedir cambios');return;}
+  const{data:task}=await db.from('tasks').select('review_history').eq('id',currentTaskId).single();
+  const history=Array.isArray(task?.review_history)?task.review_history:[];
+  history.push({type:'changes',text:fb,author:'manager',date:new Date().toISOString()});
+  const{error}=await db.from('tasks').update({
+    status:'todo',manager_feedback:fb,
+    review_history:history,updated_at:new Date().toISOString()
+  }).eq('id',currentTaskId);
+  if(error){toast('Error: '+error.message);return;}
+  closeSheet('sh-review');closeSheet('sh-task-detail');
+  toast('Cambios pedidos');await loadAllData();
+  if(!document.getElementById('tab-revisar').classList.contains('hidden'))renderRevisar();
+  if(!document.getElementById('tab-resumen').classList.contains('hidden'))renderResumen();
+}
+
+let mgrEditTaskId=null,metRev='none';
+
+async function openMgrEditTask(taskId){
+  const task=allTasks.find(t=>t.id===taskId);
+  if(!task)return;
+  mgrEditTaskId=taskId;
+  document.getElementById('met-name').value=task.name||'';
+  document.getElementById('met-due').value=task.due_date||'';
+  document.getElementById('met-asgn').value=task.assigned_to?s2n(task.assigned_to):'';
+  // Split note/copy
+  const parts=(task.note||'').split(' | ');
+  document.getElementById('met-copy').value=parts.length>1?parts[0]:'';
+  document.getElementById('met-note').value=parts.length>1?parts.slice(1).join(' | '):(task.note||'');
+  // Set channel pills
+  document.querySelectorAll('#met-ch-pills .ch-pill').forEach(b=>b.classList.remove('active'));
+  if(task.platforms){
+    JSON.parse(task.platforms).forEach(p=>{const pill=document.querySelector('#met-ch-pills .ch-pill[data-ch="'+p+'"]');if(pill)pill.classList.add('active');});
+  } else if(task.channel){
+    const pill=document.querySelector('#met-ch-pills .ch-pill[data-ch="'+task.channel+'"]');
+    if(pill)pill.classList.add('active');
+  } else {
+    document.querySelector('#met-ch-pills .ch-pill[data-ch=""]').classList.add('active');
+  }
+  setMetRev(task.review_mode||'none');
+  openSheet('sh-mgr-edit-task');
+}
+
+function metToggleCh(btn){
+  const ch=btn.dataset.ch;
+  if(ch===''){document.querySelectorAll('#met-ch-pills .ch-pill').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+  else{document.querySelector('#met-ch-pills .ch-pill[data-ch=""]').classList.remove('active');btn.classList.toggle('active');}
+}
+
+function setMetRev(m){
+  metRev=m;
+  ['none','optional','required'].forEach(x=>{
+    const el=document.getElementById('met-rev-'+x);
+    if(el){el.classList.toggle('active',x===m);}
+  });
+}
+
+async function saveMgrEditTask(){
+  const name=document.getElementById('met-name').value.trim();
+  const due=document.getElementById('met-due').value;
+  if(!name){toast('Escribe el nombre');return;}
+  if(!due){toast('Elige una fecha');return;}
+  const asgn=document.getElementById('met-asgn').value.trim();
+  const copy=document.getElementById('met-copy').value.trim();
+  const noteRaw=document.getElementById('met-note').value.trim();
+  const combined=copy?(copy+(noteRaw?' | '+noteRaw:'')):(noteRaw||null);
+  const channels=[...document.querySelectorAll('#met-ch-pills .ch-pill.active')].map(b=>b.dataset.ch).filter(ch=>ch!=='');
+  const mainCh=channels.length>0?channels[0]:null;
+  const platforms=channels.length>1?JSON.stringify(channels):null;
+  const{error}=await db.from('tasks').update({
+    name,channel:mainCh,platforms,
+    due_date:due,assigned_to:asgn?n2s(asgn):null,
+    review_mode:metRev,note:combined,
+    updated_at:new Date().toISOString()
+  }).eq('id',mgrEditTaskId);
+  if(error){toast('Error: '+error.message);return;}
+  closeSheet('sh-mgr-edit-task');
+  toast('✓ Tarea actualizada');
+  await loadAllData();
+  openTaskDetail(mgrEditTaskId);
+}
+
+function mgrDetailReview(){currentTaskId=window._mgrDetailTaskId;closeSheet('sh-task-detail');openReview(window._mgrDetailTaskId);}
+
+function mgrOpenNewSubtask(parentId){
+  window._mgrParentTaskId=parentId;
+  db.from('tasks').select('*').eq('id',parentId).single().then(({data:parent})=>{
+    if(!parent)return;
+    document.getElementById('mgr-st-name').value='';
+    document.getElementById('mgr-st-copy').value='';
+    document.getElementById('mgr-st-due').value=parent.due_date||'';
+    document.getElementById('mgr-st-note').value='';
+    document.getElementById('mgr-st-parent-lbl').textContent=parent.name;
+    // Pre-select platforms
+    document.querySelectorAll('#mgr-st-pills .ch-pill').forEach(b=>b.classList.remove('active'));
+    const plats=parent.platforms?(typeof parent.platforms==='string'?JSON.parse(parent.platforms):parent.platforms):null;
+    if(plats&&plats.length>0){
+      plats.forEach(p=>{const pill=document.querySelector('#mgr-st-pills .ch-pill[data-ch="'+p+'"]');if(pill)pill.classList.add('active');});
+    } else if(parent.channel){
+      const pill=document.querySelector('#mgr-st-pills .ch-pill[data-ch="'+parent.channel+'"]');
+      if(pill)pill.classList.add('active');
+      else document.querySelector('#mgr-st-pills .ch-pill[data-ch=""]')?.classList.add('active');
+    } else {
+      document.querySelector('#mgr-st-pills .ch-pill[data-ch=""]')?.classList.add('active');
+    }
+    setMgrSTRev('none');
+    openSheet('sh-mgr-new-subtask');
+  });
+}
+
+let mgrStRev='none';
+function setMgrSTRev(m){
+  mgrStRev=m;
+  ['none','optional','required'].forEach(x=>{const el=document.getElementById('mgr-st-rev-'+x);if(el)el.classList.toggle('active',x===m);});
+}
+function mgrStToggleCh(btn){
+  const ch=btn.dataset.ch;
+  if(ch===''){document.querySelectorAll('#mgr-st-pills .ch-pill').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+  else{document.querySelector('#mgr-st-pills .ch-pill[data-ch=""]')?.classList.remove('active');btn.classList.toggle('active');}
+}
+
+async function saveMgrSubtask(){
+  const name=document.getElementById('mgr-st-name').value.trim();
+  const due=document.getElementById('mgr-st-due').value;
+  if(!name){toast('Escribe el nombre');return;}
+  if(!due){toast('Elige una fecha');return;}
+  const channels=[...document.querySelectorAll('#mgr-st-pills .ch-pill.active')].map(b=>b.dataset.ch).filter(ch=>ch!=='');
+  const mainCh=channels.length>0?channels[0]:null;
+  const platforms=channels.length>1?JSON.stringify(channels):null;
+  const{data:parent}=await db.from('tasks').select('project_id,assigned_to').eq('id',window._mgrParentTaskId).single();
+  const{error}=await db.from('tasks').insert([{
+    project_id:parent.project_id,parent_task_id:window._mgrParentTaskId,
+    name,channel:mainCh,platforms,platforms_done:platforms?JSON.stringify([]):null,
+    due_date:due,assigned_to:parent.assigned_to||null,
+    status:'todo',review_mode:mgrStRev,
+    note:(()=>{const cp=document.getElementById('mgr-st-copy').value.trim();const nt=document.getElementById('mgr-st-note').value.trim();return cp?(cp+(nt?' | '+nt:'')):( nt||null);})(),
+    created_by:'manager'
+  }]);
+  if(error){toast('Error: '+error.message);return;}
+  closeSheet('sh-mgr-new-subtask');toast('✓ Subtarea creada');
+  await loadAllData();
+  openTaskDetail(window._mgrParentTaskId);
+}
+
+function mgrOpenSubtaskDetail(taskId){
+  window._mgrDetailTaskId=taskId;
+  openTaskDetail(taskId);
+}
+function mgrDetailEdit(){closeSheet('sh-task-detail');openMgrEditTask(window._mgrDetailTaskId);}
+
+async function mgrTogglePlatform(taskId,platform){
+  const task=allTasks.find(t=>t.id===taskId);
+  if(!task)return;
+  const platforms=task.platforms?(typeof task.platforms==='string'?JSON.parse(task.platforms):task.platforms):[];
+  let done=task.platforms_done?(typeof task.platforms_done==='string'?JSON.parse(task.platforms_done):task.platforms_done):[];
+  if(done.includes(platform))done=done.filter(p=>p!==platform);
+  else done.push(platform);
+  const allDone=platforms.every(p=>done.includes(p));
+  const update={platforms_done:JSON.stringify(done)};
+  if(allDone){update.status=dU(task.due_date)<0?'late-pub':'published';update.updated_at=new Date().toISOString();}
+  await db.from('tasks').update(update).eq('id',taskId);
+  // Update local cache
+  const idx=allTasks.findIndex(t=>t.id===taskId);
+  if(idx>=0){allTasks[idx].platforms_done=JSON.stringify(done);if(allDone)allTasks[idx].status=update.status;}
+  toast(done.length+'/'+platforms.length+' plataformas subidas');
+  openTaskDetail(taskId);
+  await loadAllData();
+}
+
+async function mgrCompleteTask(taskId){
+  const task=allTasks.find(t=>t.id===taskId);
+  if(!task)return;
+  const ns=dU(task.due_date)<0?'late-pub':'published';
+  await db.from('tasks').update({status:ns,updated_at:new Date().toISOString()}).eq('id',taskId);
+  closeSheet('sh-task-detail');
+  toast(ns==='late-pub'?'✅ Publicado (tarde)':'✅ Publicado');
+  await loadAllData();renderResumen();
+}
+
+async function deleteTask(taskId){
+  if(!confirm('¿Eliminar esta tarea?'))return;
+  await db.from('tasks').delete().eq('id',taskId);
+  closeSheet('sh-task-detail');toast('Tarea eliminada');
+  await loadAllData();renderResumen();
+}
+
+// ===== NEW TASK =====
+async function openNewTaskForArtist(artistSlug){
+  // Pre-fill artist and load their projects
+  await loadArtistProjects(artistSlug);
+  document.getElementById('nt-asgn').value=s2n(artistSlug);
+  openSheet('sh-new-task');
+}
+
+function openNewTask(){openNewTaskForArtist('');}
+
+function mgrToggleCh(btn){
+  const ch=btn.dataset.ch;
+  if(ch===''){
+    document.querySelectorAll('#mgr-ch-pills .ch-pill').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  } else {
+    document.querySelector('#mgr-ch-pills .ch-pill[data-ch=""]').classList.remove('active');
+    btn.classList.toggle('active');
+  }
+  const sel=mgrGetSelectedChannels();
+  const hint=document.getElementById('mgr-ch-hint');
+  if(hint){
+    if(!sel.length)hint.textContent='Selecciona uno o varios canales';
+    else if(sel.length===1)hint.textContent='Se creará 1 tarea';
+    else hint.textContent='Se crearán '+sel.length+' tareas (una por canal)';
+  }
+}
+
+function mgrGetSelectedChannels(){
+  return [...document.querySelectorAll('#mgr-ch-pills .ch-pill.active')]
+    .map(b=>b.dataset.ch).filter(ch=>ch!=='');
+}
+
+async function loadArtistProjects(slug){
+  const sel=document.getElementById('nt-artist-sel');
+  sel.innerHTML='<option value="">Selecciona artista...</option>';
+  allArtists.forEach(a=>sel.innerHTML+=`<option value="${a.slug}" ${a.slug===slug?'selected':''}>${a.name}</option>`);
+  sel.onchange=()=>updateProjSelect(sel.value);
+  await updateProjSelect(slug);
+  document.getElementById('nt-name').value='';
+  document.getElementById('nt-due').value='';
+  document.getElementById('nt-copy').value='';
+  document.getElementById('nt-note').value='';
+  // Reset channel pills
+  document.querySelectorAll('#mgr-ch-pills .ch-pill').forEach(b=>b.classList.remove('active'));
+  const hint=document.getElementById('mgr-ch-hint');
+  if(hint)hint.textContent='Selecciona uno o varios — se creará una tarea por canal';
+  setNTRev('none');
+}
+
+async function updateProjSelect(artistSlug){
+  const sel=document.getElementById('nt-proj-sel');
+  sel.innerHTML='<option value="">Selecciona proyecto...</option>';
+  const projs=allProjects.filter(p=>p.artist_id===artistSlug);
+  projs.forEach(p=>sel.innerHTML+=`<option value="${p.id}">${p.name}</option>`);
+  if(projs.length===1)sel.value=projs[0].id;
+  document.getElementById('nt-asgn').value=s2n(artistSlug);
+}
+
+function setNTRev(m){ntRev=m;['none','optional','required'].forEach(x=>document.getElementById('nt-rev-'+x).classList.toggle('active',x===m));}
+
+async function saveNewTask(){
+  const artistSlug=document.getElementById('nt-artist-sel').value;
+  let projId=document.getElementById('nt-proj-sel').value;
+  const name=document.getElementById('nt-name').value.trim();
+  const due=document.getElementById('nt-due').value;
+  if(!artistSlug){toast('Selecciona un artista');return;}
+  if(!name){toast('Escribe el nombre de la tarea');return;}
+  if(!due){toast('Elige una fecha');return;}
+
+  // Create default project if none
+  if(!projId){
+    const{data:p}=await db.from('projects').insert([{name:'Mis tareas',type:'loose',artist_id:artistSlug,created_by:'manager'}]).select().single();
+    projId=p?.id;
+    await loadAllData();
+  }
+
+  const assigned=document.getElementById('nt-asgn').value.trim();
+  const copy=document.getElementById('nt-copy').value.trim();
+  const noteRaw=document.getElementById('nt-note').value.trim();
+  const note=copy?(copy+(noteRaw?' | '+noteRaw:'')):(noteRaw||null);
+  const channels=mgrGetSelectedChannels();
+  const mainCh=channels.length>0?channels[0]:null;
+  const platforms=channels.length>1?channels:null;
+  const platformsDone=channels.length>1?[]:null;
+
+  const{error}=await db.from('tasks').insert([{
+    project_id:projId,name,channel:mainCh,
+    platforms:platforms?JSON.stringify(platforms):null,
+    platforms_done:platformsDone?JSON.stringify(platformsDone):null,
+    due_date:due,assigned_to:assigned?n2s(assigned):artistSlug,
+    status:'todo',review_mode:ntRev,note,created_by:'manager'
+  }]);
+  if(error){toast('Error: '+error.message);return;}
+  closeSheet('sh-new-task');
+  toast(channels.length>1?'✓ Tarea creada para '+channels.length+' plataformas':'✓ Tarea creada');
+  await loadAllData();renderResumen();
+}
+
+// ===== ARTISTS =====
+function openNewArtist(){
+  document.getElementById('na-name').value='';
+  document.getElementById('na-genre').value='';
+  document.getElementById('na-email').value='';
+  document.getElementById('na-result').style.display='none';
+  openSheet('sh-new-artist');
+}
+
+async function createArtist(){
+  const name=document.getElementById('na-name').value.trim();
+  const genre=document.getElementById('na-genre').value.trim();
+  const email=document.getElementById('na-email').value.trim();
+  if(!name){toast('Escribe el nombre');return;}
+  const slug=n2s(name);
+  const{data:ex}=await db.from('artists').select('id').eq('slug',slug);
+  if(ex?.length){toast('Ya existe un artista con ese nombre');return;}
+  await db.from('artists').insert([{name,slug,genre:genre||null,email:email||null,manager_slug:currentManagerSlug||null}]);
+  const link=`${location.origin}${location.pathname.replace('manager_dashboard.html','')}index.html?user=${slug}`;
+  document.getElementById('na-result').style.display='block';
+  document.getElementById('na-result').innerHTML=`
+    <div style="background:var(--accent-bg);border:1px solid var(--accent-b);border-radius:var(--r);padding:13px">
+      <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:6px">✓ ${name} creado</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Link para compartir:</div>
+      <div style="font-family:monospace;font-size:11px;color:var(--accent);word-break:break-all;margin-bottom:8px">${link}</div>
+      <button class="btn btn-success btn-sm" onclick="copyLink('${link}')"><i class="ti ti-copy"></i> Copiar link</button>
+    </div>`;
+  toast(`✓ ${name} creado`);
+  await loadAllData();
+  if(!document.getElementById('tab-artistas').classList.contains('hidden'))renderArtistas();
+  if(!document.getElementById('tab-resumen').classList.contains('hidden'))renderResumen();
+}
+
+async function deleteArtist(slug,name){
+  if(!confirm(`¿Eliminar a ${name}?\n\nSe eliminarán todos sus proyectos y tareas. No se puede deshacer.`))return;
+  const{data:projs}=await db.from('projects').select('id').eq('artist_id',slug);
+  if(projs?.length){
+    await db.from('tasks').delete().in('project_id',projs.map(p=>p.id));
+    await db.from('projects').delete().in('id',projs.map(p=>p.id));
+  }
+  await db.from('artists').delete().eq('slug',slug);
+  toast(`${name} eliminado`);
+  await loadAllData();renderArtistas();
+}
+
+function copyLink(link){navigator.clipboard.writeText(link).then(()=>toast('Link copiado ✓'));}
+
+// ===== TEMPLATES =====
+function openNewTemplate(){
+  editTplId=null;tplBuf=[];ttRev='none';
+  document.getElementById('sh-tpl-ttl').textContent='Nueva plantilla';
+  document.getElementById('sh-tpl-btn').textContent='Guardar plantilla';
+  document.getElementById('sh-tpl-btn').onclick=saveTpl;
+  document.getElementById('tpl-nm').value='';
+  document.getElementById('tpl-tp').value='launch';
+  document.getElementById('tt-nm').value='';
+  document.getElementById('tt-ch').value='';
+  document.getElementById('tt-days').value='';
+  setTTRev('none');renderTTList();
+  openSheet('sh-new-tpl');
+}
+
+async function openEditTpl(tplId){
+  const tpl=allTemplates.find(t=>t.id===tplId);
+  if(!tpl)return;
+  editTplId=tplId;tplBuf=[...(tpl.tasks_template||[])];
+  document.getElementById('sh-tpl-ttl').textContent='Editar plantilla';
+  document.getElementById('sh-tpl-btn').textContent='Guardar cambios';
+  document.getElementById('sh-tpl-btn').onclick=updateTpl;
+  document.getElementById('tpl-nm').value=tpl.name;
+  document.getElementById('tpl-tp').value=tpl.type;
+  document.getElementById('tt-nm').value='';document.getElementById('tt-ch').value='';document.getElementById('tt-days').value='';
+  setTTRev('none');renderTTList();
+  openSheet('sh-new-tpl');
+}
+
+function setTTRev(m){ttRev=m;['none','optional','required'].forEach(x=>document.getElementById('tt-rev-'+x).classList.toggle('active',x===m));}
+
+function addTT(){
+  const nm=document.getElementById('tt-nm').value.trim();
+  if(!nm){toast('Escribe el nombre');return;}
+  const days=parseInt(document.getElementById('tt-days').value);
+  tplBuf.push({name:nm,channel:document.getElementById('tt-ch').value,days_offset:isNaN(days)?0:days,review_mode:ttRev});
+  document.getElementById('tt-nm').value='';document.getElementById('tt-ch').value='';document.getElementById('tt-days').value='';
+  setTTRev('none');renderTTList();toast('Tarea agregada');
+}
+
+function removeTT(i){tplBuf.splice(i,1);renderTTList();}
+
+let editingTTIdx=null;
+
+function renderTTList(){
+  const L=document.getElementById('tpl-task-list');
+  if(!tplBuf.length){L.style.display='none';return;}
+  L.style.display='block';
+  let html='';
+  for(let i=0;i<tplBuf.length;i++){
+    const t=tplBuf[i];
+    const ic=CI[t.channel]||'ti-circle';
+    const dLbl=t.days_offset===0?'Dia 0':t.days_offset>0?('+'+t.days_offset+'d'):(t.days_offset+'d');
+    const rLbl=t.review_mode==='required'?'Rev.oblig':t.review_mode==='optional'?'Rev.opc':'Sin rev.';
+    html+='<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--border);background:var(--bg)">';
+    html+='<i class="ti '+ic+'" style="font-size:13px;color:var(--text2);flex-shrink:0"></i>';
+    html+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t.name+'</div>';
+    html+='<div style="font-size:10px;color:var(--text2)">'+dLbl+' · '+rLbl+'</div></div>';
+    html+='<button onclick="openEditTT('+i+')" style="background:var(--warn-bg);border:1px solid var(--warn-b);border-radius:6px;color:var(--warn);cursor:pointer;font-size:11px;font-weight:600;padding:4px 9px;flex-shrink:0;font-family:inherit">Editar</button>';
+    html+='<button onclick="removeTT('+i+')" style="background:var(--danger-bg);border:1px solid var(--danger-b);border-radius:6px;color:var(--danger);cursor:pointer;font-size:13px;padding:4px 9px;flex-shrink:0;font-family:inherit">×</button>';
+    html+='</div>';
+  }
+  L.innerHTML=html;
+  // Show/hide edit form
+  const ef=document.getElementById('tt-edit-form');
+  if(ef)ef.style.display='none';
+  editingTTIdx=null;
+}
+
+function openEditTT(idx){
+  editingTTIdx=idx;
+  const t=tplBuf[idx];
+  document.getElementById('tte-name').value=t.name||'';
+  document.getElementById('tte-channel').value=t.channel||'';
+  document.getElementById('tte-offset').value=t.days_offset??0;
+  setTTErev(t.review_mode||'none');
+  const ef=document.getElementById('tt-edit-form');
+  ef.style.display='block';
+  ef.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function setTTErev(m){
+  window._tteRev=m;
+  ['none','optional','required'].forEach(x=>{
+    const el=document.getElementById('tter-'+x);
+    if(!el)return;
+    el.style.background=x===m?'var(--text)':'var(--bg)';
+    el.style.color=x===m?'var(--bg)':'var(--text2)';
+  });
+}
+
+function saveEditTT(){
+  const nm=document.getElementById('tte-name').value.trim();
+  if(!nm){toast('Escribe el nombre');return;}
+  tplBuf[editingTTIdx]={
+    name:nm,
+    channel:document.getElementById('tte-channel').value||'',
+    days_offset:parseInt(document.getElementById('tte-offset').value)||0,
+    review_mode:window._tteRev||'none'
+  };
+  renderTTList();
+  toast('Tarea actualizada');
+}
+
+function cancelEditTT(){
+  editingTTIdx=null;
+  const ef=document.getElementById('tt-edit-form');
+  if(ef)ef.style.display='none';
+}
+
+async function saveTpl(){
+  const nm=document.getElementById('tpl-nm').value.trim();
+  if(!nm){toast('Escribe el nombre');return;}
+  if(!tplBuf.length){toast('Agrega al menos una tarea');return;}
+  const{error}=await db.from('templates').insert([{
+    name:nm,type:document.getElementById('tpl-tp').value,
+    created_by:currentManagerSlug||'admin',owner_slug:currentManagerSlug||'admin',
+    manager_slug:currentManagerSlug||null,
+    shared:false,shared_with:[],tasks_template:tplBuf
+  }]);
+  if(error){toast('Error: '+error.message);return;}
+  closeSheet('sh-new-tpl');toast('✓ Plantilla guardada');
+  await loadAllData();renderPlantillas();
+}
+
+async function updateTpl(){
+  const nm=document.getElementById('tpl-nm').value.trim();
+  if(!nm){toast('Escribe el nombre');return;}
+  await db.from('templates').update({name:nm,type:document.getElementById('tpl-tp').value,tasks_template:tplBuf}).eq('id',editTplId);
+  closeSheet('sh-new-tpl');toast('✓ Plantilla actualizada');
+  await loadAllData();renderPlantillas();
+}
+
+async function deleteTpl(tplId){
+  if(!confirm('¿Eliminar esta plantilla?'))return;
+  await db.from('templates').delete().eq('id',tplId);
+  toast('Plantilla eliminada');await loadAllData();renderPlantillas();
+}
+
+let mgrTovIdx=null,mgrTovTplId=null,mgrTovRev='none';
+
+function openTplDetail(tplId){
+  const tpl=allTemplates.find(t=>t.id===tplId);
+  if(!tpl)return;
+  // Store tplId globally so inner buttons can access it without string interpolation
+  window._currentTplId=tplId;
+  const tasks=tpl.tasks_template||[];
+  const sharedWith=Array.isArray(tpl.shared_with)?tpl.shared_with:[];
+  const isGlobal=tpl.shared===true;
+
+  let tasksHTML='';
+  if(tasks.length){
+    tasksHTML='<div id="mgr-tov-edit-form" style="display:none;background:var(--warn-bg);border:1px solid var(--warn-b);border-radius:var(--r);padding:13px;margin-bottom:10px">';
+    tasksHTML+='<div style="font-size:11px;font-weight:700;color:var(--warn);margin-bottom:10px;text-transform:uppercase">Editando tarea</div>';
+    tasksHTML+='<input type="text" id="mgr-tov-nm" placeholder="Nombre" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;background:var(--bg);margin-bottom:8px;font-family:inherit">';
+    tasksHTML+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
+    tasksHTML+='<select id="mgr-tov-ch" style="padding:9px 11px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;background:var(--bg);font-family:inherit;width:100%"><option value="">Sin canal</option><option value="youtube">YouTube</option><option value="tiktok">TikTok</option><option value="instagram">Instagram</option><option value="spotify">Spotify</option><option value="discord">Discord</option><option value="email">Email</option><option value="other">Otro</option></select>';
+    tasksHTML+='<input type="number" id="mgr-tov-days" placeholder="Dias offset" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;background:var(--bg);font-family:inherit">';
+    tasksHTML+='</div>';
+    tasksHTML+='<div style="display:flex;gap:6px;margin-bottom:10px">';
+    tasksHTML+='<button id="mgr-tov-rev-none" onclick="setMgrTovRevBtn(this)" data-rev="none" style="flex:1;padding:7px 4px;border-radius:6px;border:1px solid var(--border);font-size:11px;font-weight:600;background:var(--text);color:var(--bg);cursor:pointer;font-family:inherit">Sin rev.</button>';
+    tasksHTML+='<button id="mgr-tov-rev-optional" onclick="setMgrTovRevBtn(this)" data-rev="optional" style="flex:1;padding:7px 4px;border-radius:6px;border:1px solid var(--border);font-size:11px;font-weight:600;background:var(--bg);color:var(--text2);cursor:pointer;font-family:inherit">Opcional</button>';
+    tasksHTML+='<button id="mgr-tov-rev-required" onclick="setMgrTovRevBtn(this)" data-rev="required" style="flex:1;padding:7px 4px;border-radius:6px;border:1px solid var(--border);font-size:11px;font-weight:600;background:var(--bg);color:var(--text2);cursor:pointer;font-family:inherit">Obligatoria</button>';
+    tasksHTML+='</div>';
+    tasksHTML+='<div style="display:flex;gap:8px">';
+    tasksHTML+='<button onclick="saveMgrTovEdit(window._currentTplId)" style="flex:1;padding:9px;background:var(--text);color:var(--bg);border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Guardar</button>';
+    tasksHTML+='<button onclick="cancelMgrTovEdit()" style="padding:9px 14px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);font-size:13px;cursor:pointer;font-family:inherit">Cancelar</button>';
+    tasksHTML+='</div></div>';
+    tasksHTML+='<div style="border:1px solid var(--border);border-radius:var(--rl)">';
+    for(var i=0;i<tasks.length;i++){
+      var t=tasks[i];
+      var ic=CI[t.channel]||'ti-circle';
+      var dLbl=t.days_offset===0?'Dia 0':t.days_offset>0?('+'+t.days_offset+'d'):(t.days_offset+'d');
+      var rLbl=t.review_mode==='required'?'Rev.oblig':t.review_mode==='optional'?'Rev.opc':'Sin rev.';
+      var bb=i===tasks.length-1?'none':'1px solid var(--border)';
+      tasksHTML+='<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:'+bb+';background:var(--bg)">';
+      tasksHTML+='<i class="ti '+ic+'" style="font-size:13px;color:var(--text2);flex-shrink:0"></i>';
+      tasksHTML+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t.name+'</div>';
+      tasksHTML+='<div style="font-size:10px;color:var(--text2)">'+dLbl+' · '+rLbl+'</div></div>';
+      tasksHTML+='<button onclick="openMgrTovEdit('+i+',window._currentTplId)" style="background:var(--warn-bg);border:1px solid var(--warn-b);border-radius:6px;color:var(--warn);cursor:pointer;font-size:11px;font-weight:600;padding:5px 10px;flex-shrink:0;font-family:inherit">Editar</button>';
+      tasksHTML+='<button onclick="deleteMgrTovTask('+i+',window._currentTplId)" style="background:var(--danger-bg);border:1px solid var(--danger-b);border-radius:6px;color:var(--danger);cursor:pointer;font-size:14px;padding:5px 9px;flex-shrink:0;font-family:inherit">x</button>';
+      tasksHTML+='</div>';
+    }
+    tasksHTML+='</div>';
+  }
+
+  const sharedBadge=isGlobal?'<span class="badge b-ok">Visible para todos</span>':sharedWith.length?'<span class="badge b-info">'+sharedWith.length+' artistas</span>':'<span class="badge b-todo">Solo manager</span>';
+  const ownerLbl=tpl.owner_slug==='manager'||tpl.owner_slug==='sistema'?'Manager':s2n(tpl.owner_slug);
+
+  document.getElementById('sh-tpl-detail-content').innerHTML=
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'+
+    '<span class="tp '+TC[tpl.type]+'">'+TL[tpl.type]+'</span>'+sharedBadge+'</div>'+
+    '<div style="font-size:20px;font-weight:700;margin-bottom:4px">'+tpl.name+'</div>'+
+    '<div style="font-size:12px;color:var(--text2);margin-bottom:14px">'+tasks.length+' tareas · '+ownerLbl+'</div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">'+
+    '<button class="btn btn-info btn-sm" onclick="mgrShareCurrentTpl()"><i class="ti ti-share"></i> Compartir</button>'+
+    '<button class="btn btn-warn btn-sm" onclick="mgrEditCurrentTpl()"><i class="ti ti-edit"></i> Editar</button>'+
+    '<button class="btn btn-danger btn-sm" onclick="mgrDeleteCurrentTpl()"><i class="ti ti-trash"></i> Eliminar</button>'+
+    '</div>'+tasksHTML;
+
+  openSheet('sh-tpl-detail');
+}
+
+
+// ===== TEMPLATE DETAIL HELPERS =====
+function mgrShareCurrentTpl(){closeSheet('sh-tpl-detail');const tpl=allTemplates.find(t=>t.id===window._currentTplId);if(tpl)openShareTpl(window._currentTplId,tpl.name);}
+function mgrEditCurrentTpl(){closeSheet('sh-tpl-detail');openEditTpl(window._currentTplId);}
+function mgrDeleteCurrentTpl(){deleteTpl(window._currentTplId);}
+
+// ===== TEMPLATE TASK EDITING =====
+function openMgrTovEdit(idx,tplId){
+  mgrTovIdx=idx;mgrTovTplId=tplId;
+  const tpl=allTemplates.find(t=>t.id===tplId);
+  const task=(tpl?.tasks_template||[])[idx];
+  if(!task)return;
+  document.getElementById('mgr-tov-nm').value=task.name||'';
+  document.getElementById('mgr-tov-ch').value=task.channel||'';
+  document.getElementById('mgr-tov-days').value=task.days_offset??0;
+  setMgrTovRev(null,task.review_mode||'none');
+  const form=document.getElementById('mgr-tov-edit-form');
+  if(form){form.style.display='block';form.scrollIntoView({behavior:'smooth',block:'nearest'});}
+}
+
+function setMgrTovRevBtn(btn){
+  const m=btn.dataset.rev;
+  setMgrTovRev(null,m);
+}
+function setMgrTovRev(btnEl,m){
+  mgrTovRev=m;
+  ['none','optional','required'].forEach(x=>{
+    const el=document.getElementById('mgr-tov-rev-'+x);
+    if(!el)return;
+    if(x===m){el.style.background='var(--text)';el.style.color='var(--bg)';}
+    else{el.style.background='var(--bg)';el.style.color='var(--text2)';}
+  });
+}
+
+function cancelMgrTovEdit(){
+  mgrTovIdx=null;
+  const form=document.getElementById('mgr-tov-edit-form');
+  if(form)form.style.display='none';
+}
+
+async function saveMgrTovEdit(tplId){
+  const nm=document.getElementById('mgr-tov-nm').value.trim();
+  if(!nm){toast('Escribe el nombre');return;}
+  const tpl=allTemplates.find(t=>t.id===tplId);
+  const tasks=[...(tpl?.tasks_template||[])];
+  tasks[mgrTovIdx]={name:nm,channel:document.getElementById('mgr-tov-ch').value||'',days_offset:parseInt(document.getElementById('mgr-tov-days').value)||0,review_mode:mgrTovRev};
+  const{error}=await db.from('templates').update({tasks_template:tasks}).eq('id',tplId);
+  if(error){toast('Error: '+error.message);return;}
+  const i=allTemplates.findIndex(t=>t.id===tplId);
+  if(i>=0)allTemplates[i].tasks_template=tasks;
+  cancelMgrTovEdit();toast('Tarea actualizada');openTplDetail(tplId);
+}
+
+async function deleteMgrTovTask(idx,tplId){
+  if(!confirm('Eliminar esta tarea?'))return;
+  const tpl=allTemplates.find(t=>t.id===tplId);
+  const tasks=[...(tpl?.tasks_template||[])];
+  tasks.splice(idx,1);
+  const{error}=await db.from('templates').update({tasks_template:tasks}).eq('id',tplId);
+  if(error){toast('Error: '+error.message);return;}
+  const i=allTemplates.findIndex(t=>t.id===tplId);
+  if(i>=0)allTemplates[i].tasks_template=tasks;
+  toast('Tarea eliminada');openTplDetail(tplId);
+}
+
+// ===== SHARE TEMPLATE =====
+async function openShareTpl(tplId,tplName){
+  shareTplId=tplId;
+  const tpl=allTemplates.find(t=>t.id===tplId);
+  const currentSharedWith=Array.isArray(tpl?.shared_with)?tpl.shared_with:[];
+  const isGlobal=tpl?.shared===true;
+  document.getElementById('sh-share-tpl-name').textContent='Compartir: '+tplName;
+  const list=document.getElementById('share-artist-list');
+  let html='<div class="check-item '+(isGlobal?'checked':'')+'" id="share-all-check" onclick="toggleShareAll()">';
+  html+='<input type="checkbox" id="share-all-cb" '+(isGlobal?'checked':'')+' onchange="toggleShareAll()">';
+  html+='<div><div style="font-size:13px;font-weight:600">Todos los artistas</div><div style="font-size:11px;color:var(--text2)">Visible para cualquier artista</div></div></div>';
+  html+='<div id="individual-artists" style="'+(isGlobal?'opacity:.4;pointer-events:none':'')+'">';
+  allArtists.forEach(a=>{
+    const checked=!isGlobal&&currentSharedWith.includes(a.slug);
+    html+='<div class="check-item '+(checked?'checked':'')+'" data-slug="'+a.slug+'" onclick="toggleArtistShare(this)">';
+    html+='<input type="checkbox" '+(checked?'checked':'')+' onchange="toggleArtistShare(this.closest(\'.check-item\'))">';
+    html+='<div><div style="font-size:13px;font-weight:600">'+a.name+'</div><div style="font-size:11px;color:var(--text2)">'+(a.genre||'')+'</div></div></div>';
+  });
+  html+='</div>';
+  list.innerHTML=html;
+  openSheet('sh-share-tpl');
+}
+
+function toggleShareAll(){
+  const cb=document.getElementById('share-all-cb');
+  const item=document.getElementById('share-all-check');
+  cb.checked=!cb.checked;
+  item.classList.toggle('checked',cb.checked);
+  const ind=document.getElementById('individual-artists');
+  ind.style.opacity=cb.checked?'.4':'1';
+  ind.style.pointerEvents=cb.checked?'none':'auto';
+}
+
+function toggleArtistShare(item){
+  const cb=item.querySelector('input[type=checkbox]');
+  cb.checked=!cb.checked;
+  item.classList.toggle('checked',cb.checked);
+}
+
+function selectAllArtists(){document.querySelectorAll('#individual-artists .check-item').forEach(el=>{el.classList.add('checked');el.querySelector('input').checked=true;});}
+function selectNoArtists(){document.querySelectorAll('#individual-artists .check-item').forEach(el=>{el.classList.remove('checked');el.querySelector('input').checked=false;});}
+
+async function saveShareTpl(){
+  const isGlobal=document.getElementById('share-all-cb').checked;
+  const checkedSlugs=[];
+  document.querySelectorAll('#individual-artists .check-item').forEach(el=>{
+    if(el.classList.contains('checked')){
+      const slug=el.dataset.slug;
+      if(slug)checkedSlugs.push(slug);
+    }
+  });
+  await db.from('templates').update({shared:isGlobal,shared_with:isGlobal?[]:checkedSlugs}).eq('id',shareTplId);
+  closeSheet('sh-share-tpl');
+  const label=isGlobal?'Visible para todos':checkedSlugs.length>0?'Compartida con '+checkedSlugs.length+' artista'+(checkedSlugs.length>1?'s':''):'Solo visible para el manager';
+  toast(label);
+  await loadAllData();renderPlantillas();
+}
+
+// ===== SHEETS =====
+function openSheet(id){document.getElementById(id).classList.add('open');}
+function closeSheet(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.sov').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
+
+function goToMetrics(){
+  const p=new URLSearchParams(window.location.search);
+  const token=p.get('m');
+  if(token)window.location.href='metrics.html?m='+token;
+  else if(p.get('admin')==='1')window.location.href='metrics.html?manager=1';
+  else window.location.href='metrics.html?manager=1';
+}
+
+// ===== REVIEW HISTORY HELPERS =====
+function renderReviewHistory(history){
+  if(!history||!history.length)return'';
+  const icons={submit:'📤',approve:'✅',changes:'❌',resubmit:'📤'};
+  const labels={submit:'Artista envió contenido',approve:'Manager aprobó',changes:'Manager pidió cambios',resubmit:'Artista reenvió'};
+  const colors={submit:'var(--info-bg)',approve:'var(--accent-bg)',changes:'var(--danger-bg)',resubmit:'var(--info-bg)'};
+  const borderColors={submit:'var(--info-b)',approve:'var(--accent-b)',changes:'var(--danger-b)',resubmit:'var(--info-b)'};
+  let html='<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">';
+  history.forEach(h=>{
+    const d=new Date(h.date);
+    const dateStr=d.toLocaleDateString('es',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+    html+='<div style="background:'+colors[h.type]+';border:1px solid '+borderColors[h.type]+';border-radius:var(--r);padding:10px 12px">';
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:'+(h.text?'6':'0')+'px">';
+    html+='<div style="font-size:12px;font-weight:600">'+(icons[h.type]||'📋')+' '+(labels[h.type]||h.type)+'</div>';
+    html+='<div style="font-size:10px;color:var(--text2)">'+dateStr+'</div>';
+    html+='</div>';
+    if(h.text)html+='<div style="font-size:12px;color:var(--text2);line-height:1.4">"'+h.text+'"</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  return html;
+}
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity='0',2500);}
+
+window.addEventListener('load',()=>setTimeout(init,400));
+</script>
+</body>
+</html>
