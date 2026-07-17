@@ -848,6 +848,11 @@
           <button type="button" id="tt-type-btn-contenido" class="type-btn" onclick="ttSetType('contenido')" style="font-size:12px;padding:7px 10px"><i class="ti ti-photo-video"></i> Contenido</button>
         </div>
         <div class="fg"><label class="fl">Nombre</label><input type="text" id="tt-nm" placeholder="Ej: Video de lanzamiento" autocomplete="off" style="background:var(--bg)"></div>
+        <div class="fg"><label class="fl">Asignar a</label>
+          <select id="tt-asgn">
+            <option value="">Al artista (por defecto)</option>
+          </select>
+        </div>
         <div id="tt-content-fields" style="display:none">
         <div class="fg">
           <label class="fl">Tipo de contenido</label>
@@ -900,11 +905,6 @@
           <div id="tt-copy-sections-container"></div>
           <button type="button" onclick="addCopySection('','','tt')" style="width:100%;padding:8px;background:var(--bg2);border:1px dashed var(--border);border-radius:10px;color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;margin-top:6px"><i class="ti ti-plus"></i> Agregar sección</button>
           <input type="hidden" id="tt-copy"></div>
-        <div class="fg"><label class="fl">Asignar a</label>
-          <select id="tt-asgn">
-            <option value="">Al artista (por defecto)</option>
-          </select>
-        </div>
         <div class="fg"><label class="fl">Nota o referencia</label><textarea id="tt-note" placeholder="Referencias, instrucciones..." style="background:var(--bg)"></textarea></div>
         <div class="btn-row">
           <button class="btn btn-primary" style="flex:1" id="tt-form-btn" onclick="artSaveTTForm()">Agregar tarea</button>
@@ -3022,6 +3022,20 @@ function artOpenTTInlineForm(){
   f.style.display='block';
   f.scrollIntoView({behavior:'smooth',block:'start'});
   onTplTypeChange(document.getElementById('tpl-tp')?.value||'launch');
+  // Populate tt-asgn with team members
+  const ttAsgnSel=document.getElementById('tt-asgn');
+  if(ttAsgnSel){ttAsgnSel.innerHTML='<option value="">Al artista (por defecto)</option>';}
+  const _tplArtist=window.isMemberView?(window.memberAssignments||[])[0]?.artist_slug||currentUser:currentUser;
+  db.from('artists').select('manager_slug').eq('slug',_tplArtist).maybeSingle().then(({data:aR})=>{
+    if(aR?.manager_slug)db.from('managers').select('name,slug').eq('slug',aR.manager_slug).maybeSingle().then(({data:m})=>{
+      if(m&&ttAsgnSel)ttAsgnSel.innerHTML+=`<option value="${m.slug}">${m.name} (manager)</option>`;
+    });
+  });
+  db.from('artist_team_members').select('member_token').eq('artist_slug',_tplArtist).then(({data:asns})=>{
+    if(asns?.length)db.from('team_members').select('name,token').in('token',asns.map(a=>a.member_token)).then(({data:mbs})=>{
+      (mbs||[]).forEach(m=>{if(ttAsgnSel)ttAsgnSel.innerHTML+=`<option value="${m.token}">${m.name}</option>`;});
+    });
+  });
 }
 
 function artCloseTTForm(){
