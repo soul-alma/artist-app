@@ -2476,12 +2476,13 @@ window.addEventListener('popstate',()=>{
 function openSheet(id){
   const el=document.getElementById(id);
   if(!el)return;
+  const alreadyOnTop=_openSheetStack[_openSheetStack.length-1]===id;
   el.classList.add('open');
   el.style.zIndex=50+_openSheetStack.length; // stack visually above whatever's open
   _openSheetStack=_openSheetStack.filter(x=>x!==id);
   _openSheetStack.push(id);
   _updateFloatingCloseBtn();
-  history.pushState({nav:true},'',location.href);
+  if(!alreadyOnTop)history.pushState({nav:true},'',location.href);
 }
 
 function closeSheet(id){
